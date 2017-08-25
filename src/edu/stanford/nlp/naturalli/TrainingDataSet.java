@@ -10,33 +10,67 @@ import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreebankLanguagePack;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
+import edu.stanford.nlp.util.logging.Redwood;
 import sun.rmi.runtime.Log;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import static edu.stanford.nlp.util.logging.Redwood.Util.endTrack;
+import static edu.stanford.nlp.util.logging.Redwood.Util.log;
+import static edu.stanford.nlp.util.logging.Redwood.finishThread;
 import static edu.stanford.nlp.util.logging.Redwood.forceTrack;
 
+/**
+ * Simple script for pre-processing training data
+ */
 public class TrainingDataSet {
+    private static List<String> loadAnnotaedSentences(String url) throws IOException{
+        ArrayList<String> annotatedSentences = new ArrayList<>();
+        BufferedReader reader = new BufferedReader(new FileReader(url));
+        reader.readLine();
+        String line = "";
+        while ((line = reader.readLine()) != null){
+            String segment = "";
+            Pattern pattern = Pattern.compile("\"(.*?)\"");
+            Matcher matcher = pattern.matcher(line);
+            int counter = 0;
+            for(int i = 0; i < 5; i++){
+                matcher.find();
+            }
+            segment = matcher.group();
+            segment = segment.substring(1,segment.length()-1);
+            annotatedSentences.add(segment);
+        }
+        return annotatedSentences;
+    }
+
+
     public static void main(String[] args) {
         try{
-            BufferedReader reader = new BufferedReader(new FileReader("D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv"));
-            reader.readLine();
-            String line = reader.readLine();
-            ArrayList<String> sentences = new ArrayList<>();
-            forceTrack(line);
-            String sent = "Alexandra of Denmark ( 1844 &ndash; 1925 ) was Queen Consort to Edward VII of the United Kingdom and thus Empress of India during her husband's reign .";
-            //String sent = "Alexandra of Denmark was Queen Consort to Edward VII of the United Kingdom and thus Empress of India during her husband's reign .";
-            //String sent ="Coleco Industries Inc.,a once high-flying toy maker whose stock peaked at $65 a share in the early 1980s,filed a Chapter 11 reorganization plan that provides just 1.125 cents a share for common stockholders.";
-            sentences.add(sent);
-            List<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData = null;
-            trainingData = RelationDataPreprocessing.getDataSet(sentences);
-            System.out.println(trainingData.get(0).first.toShorterString());
+            forceTrack("Processing treebanks");
+            List<String> annotatedSentences = null;
+            //String url = "G:\\ideaprojects\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv";
+            String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv";
+            annotatedSentences = loadAnnotaedSentences(url);
+            /*
+            annotatedSentences = new ArrayList<>();
+            annotatedSentences.add("Alexandra of Denmark ( 1844 &ndash; 1925 ) was Queen Consort to Edward VII of the United Kingdom and thus Empress of India during her husband's reign .");
+            */
+            List<Pair<CoreMap, Collection<Pair<Span, Span>>>> dataset = RelationDataPreprocessing.getDataSet(annotatedSentences);
+            endTrack("Processing treebanks");
+
+            forceTrack("Training");
+            log("dataset size: " + dataset.size());
+            ClauseSplitter.train(
+                    dataset.stream(),
+                    new File("D:\\Lib\\model\\temp\\clauseSearcher.ser.gz"),
+                    new File("D:\\Lib\\model\\temp\\clauseSearcherData.tab.gz"));
+            endTrack("Training");
         }catch (Exception e){
             e.printStackTrace();
         }

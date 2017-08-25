@@ -44,7 +44,7 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
     }
 
 
-    public static Span toSpan(List<? extends HasIndex> chunk) {
+    private static Span toSpan(List<? extends HasIndex> chunk) {
         int min = Integer.MAX_VALUE;
         int max = -1;
         for (HasIndex word : chunk) {
@@ -335,6 +335,7 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         List<Tree> trees = new ArrayList<>();
 
         for(String sentence : sentences){
+            System.out.println("Processing sentence :" + sentence);
             Tokenizer<? extends HasWord> tokenizer = tlp.getTokenizerFactory().getTokenizer(new StringReader(sentence));
             List<? extends HasWord> sent2word = tokenizer.tokenize();
             trees.add(lp.parse(sent2word));
