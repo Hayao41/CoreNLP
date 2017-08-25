@@ -830,7 +830,7 @@ public class ClauseSplitterSearchProblem  {
       }
 
       // Find relevant auxilliary terms
-      SemanticGraphEdge subjOrNull = null;
+      /*SemanticGraphEdge subjOrNull = null;
       SemanticGraphEdge objOrNull = null;
       for (SemanticGraphEdge auxEdge : tree.outgoingEdgeIterable(rootWord)) {
         String relString = auxEdge.getRelation().toString();
@@ -839,11 +839,11 @@ public class ClauseSplitterSearchProblem  {
         } else if (relString.contains("subj")) {
           subjOrNull = auxEdge;
         }
-      }
+      }*/
 
       // Iterate over children
       // For each outgoing edge...
-      for (SemanticGraphEdge outgoingEdge : tree.outgoingEdgeIterable(rootWord)) {
+      /*for (SemanticGraphEdge outgoingEdge : tree.outgoingEdgeIterable(rootWord)) {
         // Prohibit indirect speech verbs from splitting off clauses
         // (e.g., 'said', 'think')
         // This fires if the governor is an indirect speech verb, and the outgoing edge is a ccomp
@@ -908,7 +908,7 @@ public class ClauseSplitterSearchProblem  {
             }
           }
         }
-      }
+      }*/
 
       seenWords.add(rootWord);
     }

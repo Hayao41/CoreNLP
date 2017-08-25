@@ -39,7 +39,9 @@ public class OpenIEDemo {
     if (args.length > 0) {
       text = IOUtils.slurpFile(args[0]);
     } else {
-      text = "Obama was born in Hawaii. He is our president.";
+      //text = "Obama was born in Hawaii. He is our president.";
+      //text = "Born in a small town,she took the midnight train going anywhere.";
+      text = "Born in Honolulu,Hawaii,Obama is a US Citizen.";
     }
     Annotation doc = new Annotation(text);
     pipeline.annotate(doc);

@@ -110,10 +110,10 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
     forceTrack("Training inference");
     trainingData.forEach(rawExample -> {
       // Parse training datum
-      CoreMap sentence = rawExample.first;
-      Collection<Pair<Span, Span>> spans = rawExample.second;
-      List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
-      SemanticGraph tree = sentence.get(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class);
+      CoreMap sentence = rawExample.first;//sentence
+      Collection<Pair<Span, Span>> spans = rawExample.second;//relation entity collection
+      List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);//POS tag of sentence
+      SemanticGraph tree = sentence.get(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class);//semantic tree of sentence
       // Create raw clause searcher (no classifier)
       ClauseSplitterSearchProblem problem = new ClauseSplitterSearchProblem(tree, true);
 

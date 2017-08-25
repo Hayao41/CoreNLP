@@ -302,8 +302,52 @@ public class CreateClauseDataset implements TSVSentenceProcessor  {
     int numTreesProcessed = 0;
     List<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData = new ArrayList<>(1024);
 
+    TreeReader reader = new PennTreeReader(IOUtils.readerFromFile(directory));
+    while ( (tree = reader.readTree()) != null ) {
+      try {
+        // Prepare the tree
+        tree.indexSpans();
+        tree.setSpans();
+        //tree.pennPrint();
+        List<Tree> leaves = tree.getLeaves();
+        for(Tree leaf :leaves){
+          System.out.print(leaf.toString()+" ");
+        }
+
+        // Get relevant information from sentence
+        List<CoreLabel> tokens = tree.getLeaves().stream()
+                .map(leaf -> (CoreLabel) leaf.label())
+//            .filter(leaf -> !TRACE_SOURCE_PATTERN.matcher(leaf.word()).matches() && !leaf.tag().equals("-NONE-"))
+                .collect(Collectors.toList());
+        SemanticGraph graph = parse(tree);
+        Map<Integer, Span> targets = findTraceTargets(tree);
+        Map<Integer, Integer> sources = findTraceSources(tree);
+
+        // Create a sentence object
+        CoreMap sentence = new ArrayCoreMap(4) {{
+          set(CoreAnnotations.TokensAnnotation.class, tokens);
+          set(SemanticGraphCoreAnnotations.BasicDependenciesAnnotation.class, graph);
+          set(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class, graph);
+          set(SemanticGraphCoreAnnotations.EnhancedPlusPlusDependenciesAnnotation.class, graph);
+        }};
+        natlog.doOneSentence(null, sentence);
+
+        // Generate training data
+        Collection<Pair<Span, Span>> trainingDataFromSentence = subjectObjectPairs(graph, tokens, targets, sources);
+        trainingData.add(Pair.makePair(sentence, trainingDataFromSentence));
+
+        // Debug print
+        numTreesProcessed += 1;
+        if (numTreesProcessed % 100 == 0) {
+          log("[" + new DecimalFormat("00000").format(numTreesProcessed) + "] " + countDatums(trainingData) + " known extractions");
+        }
+      } catch (Throwable t) {
+        t.printStackTrace();
+      }
+    }
+
     // Iterate over the files
-    for (File file : files) {
+    /*for (File file : files) {
 //      log(file);
       TreeReader reader = new PennTreeReader(IOUtils.readerFromFile(file));
       while ( (tree = reader.readTree()) != null ) {
@@ -343,7 +387,7 @@ public class CreateClauseDataset implements TSVSentenceProcessor  {
           t.printStackTrace();
         }
       }
-    }
+    }*/
 
     // End
     log("" + numTreesProcessed + " trees processed yielding " + countDatums(trainingData) + " known extractions");
@@ -355,7 +399,7 @@ public class CreateClauseDataset implements TSVSentenceProcessor  {
   /**
    * The main entry point of the code.
    */
-  public static void main(String[] args) throws IOException {
+  /*public static void main(String[] args) throws IOException {
     forceTrack("Processing treebanks");
     List<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData = new ArrayList<>();
     trainingData.addAll(processDirectory("WSJ", new File("/home/gabor/lib/data/penn_treebank/wsj")));
@@ -372,6 +416,27 @@ public class CreateClauseDataset implements TSVSentenceProcessor  {
 
 
 
+
+//    Execution.fillOptions(CreateClauseDataset.class, args);
+//
+//    new CreateClauseDataset().runAndExit(in, System.err, code -> code);
+  }*/
+
+  public static void main(String[] args) throws IOException {
+    forceTrack("Processing treebanks");
+    List<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData = new ArrayList<>();
+    trainingData.addAll(processDirectory("WSJ", new File("D:\\Lib\\treebank\\penn_treebank\\wsj")));
+    //trainingData.addAll(processDirectory("WSJ", new File("D:\\Lib\\treebank\\penn_treebank")));
+    //trainingData.addAll(processDirectory("Brown", new File("D:\\Lib\\treebank\\penn_treebank\\brown")));
+    endTrack("Processing treebanks");
+
+    forceTrack("Training");
+    log("dataset size: " + trainingData.size());
+    ClauseSplitter.train(
+            trainingData.stream(),
+            new File("D:\\Lib\\model\\temp\\clauseSearcher.ser.gz"),
+            new File("D:\\Lib\\model\\temp\\clauseSearcherData.tab.gz"));
+    endTrack("Training");
 
 //    Execution.fillOptions(CreateClauseDataset.class, args);
 //
