@@ -32,7 +32,9 @@ public class TrainingDataSet {
         try{
             List<Pair<CoreMap, Collection<Pair<Span, Span>>>> dataset = null;
             Properties properties = new Properties();
-            InputStream in = new FileInputStream(new File("D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\naturalli\\properties\\datasetproperties.properties"));
+            //InputStream in = new FileInputStream(new File("D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\naturalli\\properties\\datasetproperties.properties"));
+            InputStream in = new FileInputStream(new File("G:\\ideaprojects\\CoreNLP\\src\\edu\\stanford\\nlp\\naturalli\\properties\\datasetproperties.properties"));
+
             properties.load(in);
             in.close();
             String dataSource = properties.getProperty("dataset");
@@ -43,7 +45,8 @@ public class TrainingDataSet {
                 List<String> annotatedSentences = null;
                 //String url = "G:\\ideaprojects\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv";
                 //String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv";
-                String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences2.csv";
+                //String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences2.csv";
+                String url = "G:\\ideaprojects\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences2.csv";
                 annotatedSentences = RelationDataPreprocessing.loadAnnotaedSentences(url);
 
                 /*annotatedSentences = new ArrayList<>();
