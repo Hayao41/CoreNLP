@@ -3,6 +3,8 @@ package edu.stanford.nlp.naturalli;
 import edu.stanford.nlp.ie.machinereading.structure.Span;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.ling.*;
+import edu.stanford.nlp.naturalli.bean.Location;
+import edu.stanford.nlp.naturalli.bean.Senetnce;
 import edu.stanford.nlp.parser.lexparser.LexicalizedParser;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.process.TSVSentenceProcessor;
@@ -12,17 +14,18 @@ import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.semgraph.semgrex.SemgrexMatcher;
 import edu.stanford.nlp.semgraph.semgrex.SemgrexPattern;
+import edu.stanford.nlp.simple.Sentence;
 import edu.stanford.nlp.trees.*;
 import edu.stanford.nlp.util.ArgumentParser;
 import edu.stanford.nlp.util.ArrayCoreMap;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.logging.Redwood;
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.omg.CORBA.Request;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
+import java.sql.*;
+import java.io.*;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -341,6 +344,96 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
             trees.add(lp.parse(sent2word));
         }
         return trees;
+    }
+
+    public static List<String> loadAnnotaedSentences(String url) throws IOException{
+        ArrayList<String> annotatedSentences = new ArrayList<>();
+        BufferedReader reader = new BufferedReader(new FileReader(url));
+        reader.readLine();
+        String line = "";
+        while ((line = reader.readLine()) != null){
+            String segment = "";
+            Pattern pattern = Pattern.compile("\"(.*?)\"");
+            Matcher matcher = pattern.matcher(line);
+            int counter = 0;
+            for(int i = 0; i < 5; i++){
+                matcher.find();
+            }
+            segment = matcher.group();
+            segment = segment.substring(1,segment.length()-1);
+            segment = StringEscapeUtils.unescapeHtml4(segment);
+            annotatedSentences.add(segment);
+        }
+        return annotatedSentences;
+    }
+
+    private static Connection conn2database()throws Exception{
+        Class.forName("com.mysql.jdbc.Driver").newInstance();
+        Connection connection = null;
+        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
+        if(connection != null){
+            System.out.println("Connect to mysql/nlp422 successfully!");
+        }else {
+            System.out.println("invalid connect to mysql/nlp422");
+        }
+        return connection;
+    }
+
+    public static void savedataset(List<String> sentences, List<Pair<CoreMap, Collection<Pair<Span, Span>>>> dataset)throws Exception{
+        if(dataset.isEmpty())
+            throw new Exception("dataset is empty");
+        if(sentences.size() != dataset.size())
+            throw new Exception("dataset doesn't match sentences");
+        Connection connection = conn2database();
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        String sql_s = "INSERT INTO sentence(sentence.sid, sentence.sentence) VALUES(?,?)";
+        String sql_l = "INSERT INTO location(location.sid, location.start_left, location.start_right, location.end_left, location.end_right) VALUES(?,?,?,?,?)";
+        for(int i = 0; i < sentences.size(); i++){
+            int rows = 0;
+            String sentence_num = "S#" + i;
+            Senetnce senetnce = new Senetnce();
+            senetnce.setSentence(sentences.get(i));
+            Collection<Pair<Span, Span>> locations = dataset.get(i).second;
+            senetnce.setSid(sentence_num);
+            stmt = connection.prepareStatement(sql_s);
+            stmt.setString(1,senetnce.getSid());
+            stmt.setString(2,senetnce.getSentence());
+            rows = stmt.executeUpdate();
+            if(rows > 0){
+                System.out.println("insert sentence "+ sentence_num + " successfully!");
+            }
+            stmt.close();
+            rows = 0;
+            for(Pair<Span, Span> location : locations){
+                Location location_temp = new Location();
+                location_temp.setSid(sentence_num);
+                Span left = location.first;
+                Span right = location.second;
+                location_temp.setStart_left(left.start());
+                location_temp.setEnd_left(left.end());
+                location_temp.setStart_right(right.start());
+                location_temp.setEnd_right(right.end());
+                stmt = connection.prepareStatement(sql_l);
+                stmt.setString(1,location_temp.getSid());
+                stmt.setInt(2,location_temp.getStart_left());
+                stmt.setInt(3,location_temp.getStart_right());
+                stmt.setInt(4,location_temp.getEnd_left());
+                stmt.setInt(5,location_temp.getEnd_right());
+                rows += stmt.executeUpdate();
+            }
+            if(rows > 0){
+                System.out.println("insert "+ rows + " locations into sentence "+ sentence_num+ " successfully!");
+            }
+            stmt.close();
+        }
+        connection.close();
+    }
+
+    public static List<Pair<CoreMap, Collection<Pair<Span, Span>>>> loadDataSetfromDataBase()throws Exception{
+        List<Pair<CoreMap, Collection<Pair<Span, Span>>>> dataset = new ArrayList<Pair<CoreMap, Collection<Pair<Span, Span>>>>();
+        Connection connection = conn2database();
+        return dataset;
     }
 
     public static List<Pair<CoreMap, Collection<Pair<Span, Span>>>> getDataSet(List<String> senetnces) throws Exception{
