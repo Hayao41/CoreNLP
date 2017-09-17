@@ -7,6 +7,7 @@ import edu.stanford.nlp.naturalli.bean.Location;
 import edu.stanford.nlp.naturalli.bean.Senetnce;
 import edu.stanford.nlp.parser.lexparser.LexicalizedParser;
 import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.process.ListProcessor;
 import edu.stanford.nlp.process.TSVSentenceProcessor;
 import edu.stanford.nlp.process.Tokenizer;
 import edu.stanford.nlp.semgraph.SemanticGraph;
@@ -338,7 +339,7 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         List<Tree> trees = new ArrayList<>();
 
         for(String sentence : sentences){
-            System.out.println("Processing sentence :" + sentence);
+            System.out.println("Processing sentence : \n" + sentence);
             Tokenizer<? extends HasWord> tokenizer = tlp.getTokenizerFactory().getTokenizer(new StringReader(sentence));
             List<? extends HasWord> sent2word = tokenizer.tokenize();
             trees.add(lp.parse(sent2word));
@@ -372,7 +373,8 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
     private static Connection conn2database()throws Exception{
         Class.forName("com.mysql.jdbc.Driver").newInstance();
         Connection connection = null;
-        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=20080808qwejkl");
+        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
+        //connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=20080808qwejkl");
         if(connection != null){
             System.out.println("Connect to mysql/nlp422 successfully!");
         }else {
@@ -381,51 +383,52 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         return connection;
     }
 
-    public static void savedataset(List<String> sentences, List<Pair<CoreMap, Collection<Pair<Span, Span>>>> dataset)throws Exception{
+    public static void savedataset(List<String> sentences, List<Pair<CoreMap, Collection<Pair<Span, Span>>>> dataset, List<Tree> parse_trees)throws Exception{
         if(dataset.isEmpty())
             throw new Exception("dataset is empty");
         if(sentences.size() != dataset.size())
             throw new Exception("dataset doesn't match sentences");
         Connection connection = conn2database();
         PreparedStatement stmt = null;
-        ResultSet rs = null;
-        String sql_s = "INSERT INTO sentence(sentence.sid, sentence.sentence) VALUES(?,?)";
+        String sql_s = "INSERT INTO sentence(sentence.sid, sentence.sentence, sentence.parse_tree) VALUES(?,?,?)";
         String sql_l = "INSERT INTO location(location.sid, location.start_left, location.start_right, location.end_left, location.end_right) VALUES(?,?,?,?,?)";
+
+        //iterate all sentences
         for(int i = 0; i < sentences.size(); i++){
+
             int rows = 0;
             String sentence_num = "S#" + i;
-            Senetnce senetnce = new Senetnce();
-            senetnce.setSentence(sentences.get(i));
+            Tree parse_tree = parse_trees.get(i);
             Collection<Pair<Span, Span>> locations = dataset.get(i).second;
-            senetnce.setSid(sentence_num);
+
+            //saving sentence's all attributes to database
             stmt = connection.prepareStatement(sql_s);
-            stmt.setString(1,senetnce.getSid());
-            stmt.setString(2,senetnce.getSentence());
+            stmt.setString(2,sentences.get(i));
+            stmt.setString(1,sentence_num);
+            stmt.setString(3,parse_tree.toString());
             rows = stmt.executeUpdate();
+
             if(rows > 0){
                 System.out.println("insert sentence "+ sentence_num + " successfully!");
             }
+
             stmt.close();
             rows = 0;
+
+            //saving location of this sentence
             for(Pair<Span, Span> location : locations){
-                Location location_temp = new Location();
-                location_temp.setSid(sentence_num);
                 Span left = location.first;
                 Span right = location.second;
-                location_temp.setStart_left(left.start());
-                location_temp.setEnd_left(left.end());
-                location_temp.setStart_right(right.start());
-                location_temp.setEnd_right(right.end());
                 stmt = connection.prepareStatement(sql_l);
-                stmt.setString(1,location_temp.getSid());
-                stmt.setInt(2,location_temp.getStart_left());
-                stmt.setInt(3,location_temp.getStart_right());
-                stmt.setInt(4,location_temp.getEnd_left());
-                stmt.setInt(5,location_temp.getEnd_right());
+                stmt.setString(1,sentence_num);
+                stmt.setInt(2,left.start());
+                stmt.setInt(3,right.start());
+                stmt.setInt(4,left.end());
+                stmt.setInt(5,right.end());
                 rows += stmt.executeUpdate();
             }
             if(rows > 0){
-                System.out.println("insert "+ rows + " locations into sentence "+ sentence_num+ " successfully!");
+                System.out.println("insert "+ rows + " relations into sentence "+ sentence_num+ " successfully!");
             }
             stmt.close();
         }
@@ -434,7 +437,61 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
 
     public static List<Pair<CoreMap, Collection<Pair<Span, Span>>>> loadDataSetfromDataBase()throws Exception{
         List<Pair<CoreMap, Collection<Pair<Span, Span>>>> dataset = new ArrayList<Pair<CoreMap, Collection<Pair<Span, Span>>>>();
+        ArrayList<Senetnce> sentences = new ArrayList<>();
         Connection connection = conn2database();
+        String sql_s = "SELECT * FROM sentence";
+        String sql_l = "SELECT * FROM location WHERE sid = ?";
+        PreparedStatement preparedStatement = null;
+        Statement stmt = connection.createStatement();
+        ResultSet rs = stmt.executeQuery(sql_s);
+        while (rs.next()){
+            Senetnce senetnce = new Senetnce();
+            senetnce.setSentence(rs.getString(1));
+            senetnce.setSid(rs.getString(2));
+            senetnce.setParse_tree(rs.getString(3));
+            sentences.add(senetnce);
+        }
+        stmt.close();
+        rs.close();
+        for(int i = 0; i < sentences.size(); i ++){
+            System.out.println("Processing sentence : S#" + i);
+            Tree tree = Tree.valueOf(sentences.get(i).getParse_tree(), new LabeledScoredTreeReaderFactory());
+            tree.indexSpans();
+            tree.setSpans();
+            List<CoreLabel> tokens = tree.getLeaves().stream().map(leaf -> (CoreLabel) leaf.label()).collect(Collectors.toList());
+            SemanticGraph graph = parse(tree);
+            Map<Integer, Span> targets = findTraceTargets(tree);
+            Map<Integer, Integer> sources = findTraceSources(tree);
+
+            // Create a sentence object
+            CoreMap coreMap = new ArrayCoreMap(4) {{
+                set(CoreAnnotations.TokensAnnotation.class, tokens);
+                set(SemanticGraphCoreAnnotations.BasicDependenciesAnnotation.class, graph);
+                set(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class, graph);
+                set(SemanticGraphCoreAnnotations.EnhancedPlusPlusDependenciesAnnotation.class, graph);
+            }};
+            natlog.doOneSentence(null, coreMap);
+            sentences.get(i).setCoreMap(coreMap);
+        }
+        for(Senetnce senetnce : sentences){
+            Pair<CoreMap, Collection<Pair<Span, Span>>> datapair = new Pair<>();
+            ArrayList<Pair<Span,Span>> locations = new ArrayList<>();
+            preparedStatement = connection.prepareStatement(sql_l);
+            preparedStatement.setString(1,senetnce.getSid());
+            rs = preparedStatement.executeQuery();
+            while (rs.next()){
+                Pair<Span,Span> pair = new Pair<>();
+                pair.first = new Span(rs.getInt(3), rs.getInt(5));
+                pair.second = new Span(rs.getInt(4), rs.getInt(6));
+                locations.add(pair);
+            }
+            datapair.first = senetnce.getCoreMap();
+            datapair.second = locations;
+            dataset.add(datapair);
+            preparedStatement.close();
+            rs.close();
+        }
+        connection.close();
         return dataset;
     }
 
@@ -444,6 +501,9 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         List<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData = null;
         List<Tree> parse_trees = sent2trees(senetnces);
         trainingData = processTrees(parse_trees);
+        forceTrack("Saving dataset to database");
+        savedataset(senetnces, trainingData, parse_trees);
+        endTrack("Saving dataset to database");
         return trainingData;
     }
 }

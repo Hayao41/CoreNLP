@@ -289,6 +289,4 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
       throw new IllegalStateException("Invalid model at path: " + serializedModel, e);
     }
   }
-
-
 }

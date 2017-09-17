@@ -32,39 +32,44 @@ public class TrainingDataSet {
         try{
             List<Pair<CoreMap, Collection<Pair<Span, Span>>>> dataset = null;
             Properties properties = new Properties();
-            //InputStream in = new FileInputStream(new File("D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\naturalli\\properties\\datasetproperties.properties"));
-            InputStream in = new FileInputStream(new File("G:\\ideaprojects\\CoreNLP\\src\\edu\\stanford\\nlp\\naturalli\\properties\\datasetproperties.properties"));
+            InputStream in = new FileInputStream(new File("D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\naturalli\\properties\\datasetproperties.properties"));
+            //InputStream in = new FileInputStream(new File("G:\\ideaprojects\\CoreNLP\\src\\edu\\stanford\\nlp\\naturalli\\properties\\datasetproperties.properties"));
 
             properties.load(in);
             in.close();
             String dataSource = properties.getProperty("dataset");
+            List<String> annotatedSentences = null;
             if(dataSource.equals("from database")){
                 dataset = RelationDataPreprocessing.loadDataSetfromDataBase();
             }else{
                 forceTrack("Processing treebanks");
-                List<String> annotatedSentences = null;
-                //String url = "G:\\ideaprojects\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv";
-                //String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv";
-                //String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences2.csv";
-                String url = "G:\\ideaprojects\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences2.csv";
-                annotatedSentences = RelationDataPreprocessing.loadAnnotaedSentences(url);
 
-                /*annotatedSentences = new ArrayList<>();
-                annotatedSentences.add("Alexandra of Denmark ( 1844 – 1925 ) was Queen Consort to Edward VII of the United Kingdom and thus Empress of India during her husband's reign .");*/
+                //String url = "G:\\ideaprojects\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv";
+                String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv";
+                //String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences2.csv";
+                //String url = "G:\\ideaprojects\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences2.csv";
+                annotatedSentences = RelationDataPreprocessing.loadAnnotaedSentences(url);
+                ArrayList<Integer> temp = new ArrayList<>();
+                for(String sentence : annotatedSentences){
+                    temp.add(sentence.length());
+                }
+                temp.sort(Integer::compareTo);
+                System.out.println(temp.get(temp.size()-1));
 
                 dataset = RelationDataPreprocessing.getDataSet(annotatedSentences);
-                RelationDataPreprocessing.savedataset(annotatedSentences, dataset);
+
                 endTrack("Processing treebanks");
             }
 
-
-            forceTrack("Training");
-            log("dataset size: " + dataset.size());
-            ClauseSplitter.train(
-                    dataset.stream(),
-                    new File("D:\\Lib\\model\\temp\\clauseSearcher.ser.gz"),
-                    new File("D:\\Lib\\model\\temp\\clauseSearcherData.tab.gz"));
-            endTrack("Training");
+            if(properties.getProperty("trained").equals("false")){
+                forceTrack("Training");
+                log("dataset size: " + dataset.size());
+                ClauseSplitter.train(
+                        dataset.stream(),
+                        new File("D:\\Lib\\model\\temp\\clauseSearcher.ser.gz"),
+                        new File("D:\\Lib\\model\\temp\\clauseSearcherData.tab.gz"));
+                endTrack("Training");
+            }
         }catch (Exception e){
             e.printStackTrace();
         }

@@ -399,7 +399,7 @@ public class CreateClauseDataset implements TSVSentenceProcessor  {
   /**
    * The main entry point of the code.
    */
-  /*public static void main(String[] args) throws IOException {
+  public static void main(String[] args) throws IOException {
     forceTrack("Processing treebanks");
     List<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData = new ArrayList<>();
     trainingData.addAll(processDirectory("WSJ", new File("/home/gabor/lib/data/penn_treebank/wsj")));
@@ -413,16 +413,12 @@ public class CreateClauseDataset implements TSVSentenceProcessor  {
         new File("/home/gabor/tmp/clauseSearcher.ser.gz"),
         new File("/home/gabor/tmp/clauseSearcherData.tab.gz"));
     endTrack("Training");
-
-
-
-
 //    Execution.fillOptions(CreateClauseDataset.class, args);
 //
 //    new CreateClauseDataset().runAndExit(in, System.err, code -> code);
-  }*/
+  }
 
-  public static void main(String[] args) throws IOException {
+  /* public static void main(String[] args) throws IOException {
     forceTrack("Processing treebanks");
     List<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData = new ArrayList<>();
     trainingData.addAll(processDirectory("WSJ", new File("D:\\Lib\\treebank\\penn_treebank\\wsj")));
@@ -441,5 +437,5 @@ public class CreateClauseDataset implements TSVSentenceProcessor  {
 //    Execution.fillOptions(CreateClauseDataset.class, args);
 //
 //    new CreateClauseDataset().runAndExit(in, System.err, code -> code);
-  }
+  } */
 }

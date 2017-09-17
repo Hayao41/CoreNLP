@@ -13,7 +13,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../../lib/xom-1.2.10.jar!/" />
+          <root url="jar://$MODULE_DIR$/../../lib/mysql-connector-java-3.1.14-bin.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -31,7 +31,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../../lib/slf4j-api.jar!/" />
+          <root url="jar://$MODULE_DIR$/../../lib/javax.servlet.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -139,7 +139,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$MODULE_DIR$/../../lib/javax.servlet.jar!/" />
+          <root url="jar://$MODULE_DIR$/../../lib/slf4j-api.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
@@ -275,6 +275,15 @@
       <library>
         <CLASSES>
           <root url="jar://$MODULE_DIR$/../../liblocal/antlr-runtime.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../../lib/xom-1.2.10.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
