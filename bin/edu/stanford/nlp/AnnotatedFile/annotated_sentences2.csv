@@ -1,0 +1,2 @@
+"key","relation","confidence","jsDistance","sentence","entity","entityCharOffsetBegin","entityCharOffsetEnd","slotValue","slotValueCharOffsetBegin","slotValueCharOffsetEnd"
+"fdb3a9f48026206becb2ca02b9c2c67246aa6f3385dd28838ed7df675801596e:0-3:12-13","per:spouse","0.5000","0.4937","Alexandra of Denmark ( 1844 &ndash; 1925 ) was Queen Consort to Edward VII of the United Kingdom and thus Empress of India during her husband's reign .","Alexandra of Denmark","0","20"," Edward","63","70"
