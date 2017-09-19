@@ -1,6 +1,7 @@
 package edu.stanford.nlp.naturalli.bean;
 
 public class RelationEntityTuple {
+    private int kbid;
     private String sid;
     private String entity;
     private String slotValue;
@@ -21,7 +22,8 @@ public class RelationEntityTuple {
         this.slotValueCharOffsetEnd = slotValueCharOffsetEnd;
     }
 
-    public RelationEntityTuple(String sid, String entity, String slotValue, int entityCharOffsetBegin, int entityCharOffsetEnd, int slotValueCharOffsetBegin, int slotValueCharOffsetEnd) {
+    public RelationEntityTuple(int kbid, String sid, String entity, String slotValue, int entityCharOffsetBegin, int entityCharOffsetEnd, int slotValueCharOffsetBegin, int slotValueCharOffsetEnd) {
+        this.kbid = kbid;
         this.sid = sid;
         this.entity = entity;
         this.slotValue = slotValue;
@@ -29,6 +31,14 @@ public class RelationEntityTuple {
         this.entityCharOffsetEnd = entityCharOffsetEnd;
         this.slotValueCharOffsetBegin = slotValueCharOffsetBegin;
         this.slotValueCharOffsetEnd = slotValueCharOffsetEnd;
+    }
+
+    public int getKbid() {
+        return kbid;
+    }
+
+    public void setKbid(int kbid) {
+        this.kbid = kbid;
     }
 
     public String getSid() {

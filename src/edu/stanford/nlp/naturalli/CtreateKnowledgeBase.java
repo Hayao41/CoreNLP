@@ -14,6 +14,7 @@ public class CtreateKnowledgeBase {
     public static void main(String[] args) {
         try{
             String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences2.csv";
+            String sql = "";
             BufferedReader reader = new BufferedReader(new FileReader(url));
             reader.readLine();
             String line = "";
@@ -30,14 +31,8 @@ public class CtreateKnowledgeBase {
                 int entityCharOffsetEnd = Integer.parseInt(values[7]);
                 int slotValueCharOffsetBegin = Integer.parseInt(values[9]);
                 int slotValueCharOffsetEnd = Integer.parseInt(values[10]);
-                RelationEntityTuple tuplr = new RelationEntityTuple(sid,
-                                                                    entity,
-                                                                    slotValue,
-                                                                    entityCharOffsetBegin,
-                                                                    entityCharOffsetEnd,
-                                                                    slotValueCharOffsetBegin,
-                                                                    slotValueCharOffsetEnd
-                                                                    );
+
+
         }
         }catch (IOException e){
             e.printStackTrace();
