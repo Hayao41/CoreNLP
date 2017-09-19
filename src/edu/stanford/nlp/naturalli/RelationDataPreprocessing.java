@@ -370,11 +370,11 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         return annotatedSentences;
     }
 
-    private static Connection conn2database()throws Exception{
+    public static Connection conn2database()throws Exception{
         Class.forName("com.mysql.jdbc.Driver").newInstance();
         Connection connection = null;
-        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
-        //connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=20080808qwejkl");
+//        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
+        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=20080808qwejkl");
         if(connection != null){
             System.out.println("Connect to mysql/nlp422 successfully!");
         }else {
