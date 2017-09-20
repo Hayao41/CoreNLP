@@ -362,10 +362,7 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
             }
             segment = matcher.group();
             segment = segment.substring(1,segment.length()-1);
-            segment = StringEscapeUtils.unescapeHtml4(segment);
-            if(segment.contains("&"))
-                segment = StringEscapeUtils.unescapeHtml4(segment);
-            annotatedSentences.add(segment);
+            decodeHtml(segment);
         }
         return annotatedSentences;
     }
@@ -373,8 +370,8 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
     public static Connection conn2database()throws Exception{
         Class.forName("com.mysql.jdbc.Driver").newInstance();
         Connection connection = null;
-//        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
-        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=20080808qwejkl");
+        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
+//        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=20080808qwejkl");
         if(connection != null){
             System.out.println("Connect to mysql/nlp422 successfully!");
         }else {
@@ -505,5 +502,11 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         savedataset(senetnces, trainingData, parse_trees);
         endTrack("Saving dataset to database");
         return trainingData;
+    }
+
+    public static void decodeHtml(String str) {
+        str = StringEscapeUtils.unescapeHtml4(str);
+        if (str.contains("&"))
+            str = StringEscapeUtils.unescapeHtml4(str);
     }
 }
