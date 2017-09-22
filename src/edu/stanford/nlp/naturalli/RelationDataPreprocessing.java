@@ -1,6 +1,7 @@
 package edu.stanford.nlp.naturalli;
 
 import edu.stanford.nlp.ie.machinereading.structure.Span;
+import edu.stanford.nlp.ie.util.RelationTriple;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.ling.*;
 import edu.stanford.nlp.naturalli.bean.Location;
@@ -564,5 +565,24 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         subobjpair.first = sub_text;
         subobjpair.second = obj_text;
         return subobjpair;
+    }
+
+    public static Pair<String, String> revert2governor(RelationTriple extraction){
+        Pair<String, String> governor = new Pair<String, String>();
+        List<CoreLabel> subject = extraction.subject;
+        List<CoreLabel> object = extraction.object;
+        String subText = "";
+        String objText = "";
+        for(CoreLabel label : subject){
+            subText += label.value() + " ";
+        }
+        subText = subText.substring(0, subText.length() - 1);
+        for(CoreLabel label : object){
+            objText += label.value() +  " ";
+        }
+        objText = objText.substring(0, objText.length() - 1);
+        governor.first = subText;
+        governor.second = objText;
+        return governor;
     }
 }

@@ -1,6 +1,7 @@
 package edu.stanford.nlp.naturalli;
 
 import edu.stanford.nlp.classify.*;
+import edu.stanford.nlp.ie.machinereading.structure.Relation;
 import edu.stanford.nlp.ie.machinereading.structure.Span;
 import edu.stanford.nlp.ie.util.RelationTriple;
 import edu.stanford.nlp.io.IOUtils;
@@ -83,17 +84,17 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
    * @return A factory for creating searchers from a given dependency tree.
    */
   static ClauseSplitter train(
-      Stream<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData,
-      Optional<File> modelPath,
-      Optional<File> trainingDataDump,
-      Featurizer featurizer) {
+          Stream<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData,
+          Optional<File> modelPath,
+          Optional<File> trainingDataDump,
+          Featurizer featurizer) {
 
     // Parse options
     LinearClassifierFactory<ClauseClassifierLabel, String> factory = new LinearClassifierFactory<>();
     // Generally useful objects
     OpenIE openie = new OpenIE(PropertiesUtils.asProperties(
-        "splitter.nomodel", "true",
-        "optimizefor", "GENERAL"
+            "splitter.nomodel", "true",
+            "optimizefor", "GENERAL"
     ));
     WeightedDataset<ClauseClassifierLabel, String> dataset = new WeightedDataset<>();
     AtomicInteger numExamplesProcessed = new AtomicInteger(0);
@@ -110,18 +111,10 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
     forceTrack("Training inference");
     trainingData.forEach(rawExample -> {
       // Parse training datum
-      CoreMap sentence = rawExample.first;//sentence
-      Collection<Pair<Span, Span>> spans = rawExample.second;//relation entity collection
-      List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);//POS tag of sentence
-      SemanticGraph tree = sentence.get(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class);//semantic tree of sentence
-      String sentenceText = sentence.get(ExtendedSemanticGraphCoreAnnotations.SenetceText.class);
-      System.out.println(sentenceText);
-      Pair<Span, Span> span_pair = null;
-      for (Pair<Span, Span> temp : spans){
-        span_pair = temp;
-        break;
-      }
-      Pair<String, String> subobjPair = RelationDataPreprocessing.getSubobjPair(tree, span_pair);
+      CoreMap sentence = rawExample.first;
+      Collection<Pair<Span, Span>> spans = rawExample.second;
+      List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+      SemanticGraph tree = sentence.get(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class);
       // Create raw clause searcher (no classifier)
       ClauseSplitterSearchProblem problem = new ClauseSplitterSearchProblem(tree, true);
 
@@ -135,6 +128,13 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
         Set<RelationTriple> extractions = new HashSet<>(openie.relationsInFragments(openie.entailmentsFromClause(fragment)));
         Trilean correct = Trilean.FALSE;
         RELATION_TRIPLE_LOOP: for (RelationTriple extraction : extractions) {
+
+          //the block added by myself
+
+          Pair<String, String> governor = RelationDataPreprocessing.revert2governor(extraction);
+
+          //the block added by myself
+
           // Clean up the guesses
           Span subjectGuess = Span.fromValues(extraction.subject.get(0).index() - 1, extraction.subject.get(extraction.subject.size() - 1).index());
           Span objectGuess = Span.fromValues(extraction.object.get(0).index() - 1, extraction.object.get(extraction.object.size() - 1).index());
@@ -143,12 +143,12 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
             Span objectSpan = candidateGold.second;
             // Check if it matches
             if ((subjectGuess.equals(subjectSpan) && objectGuess.equals(objectSpan)) ||
-                (subjectGuess.equals(objectSpan) && objectGuess.equals(subjectSpan))
-                ) {
+                    (subjectGuess.equals(objectSpan) && objectGuess.equals(subjectSpan))
+                    ) {
               correct = Trilean.TRUE;
               break RELATION_TRIPLE_LOOP;
             } else if (Util.nerOverlap(tokens, subjectSpan, subjectGuess) && Util.nerOverlap(tokens, objectSpan, objectGuess) ||
-                Util.nerOverlap(tokens, subjectSpan, objectGuess) && Util.nerOverlap(tokens, objectSpan, subjectGuess)) {
+                    Util.nerOverlap(tokens, subjectSpan, objectGuess) && Util.nerOverlap(tokens, objectSpan, subjectGuess)) {
               if (!correct.isTrue()) {
                 correct = Trilean.TRUE;
                 break RELATION_TRIPLE_LOOP;
@@ -160,6 +160,12 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
               }
             }
           }
+
+          //the test block should added by myself
+
+          /*very important!*/
+
+          //the test block should added by myself
         }
 
         // Process the datum
@@ -209,7 +215,7 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
             // (dump datum to debug log)
             if (datasetDumpWriter.isPresent()) {
               datasetDumpWriter.get().println(decision.second + "\t" +
-                  StringUtils.join(decision.first.entrySet().stream().map(entry -> entry.getKey() + "->" + entry.getValue()), ";"));
+                      StringUtils.join(decision.first.entrySet().stream().map(entry -> entry.getKey() + "->" + entry.getValue()), ";"));
             }
             // (add datum to dataset)
             dataset.add(datum);
@@ -272,9 +278,9 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
   }
 
   static ClauseSplitter train(
-      Stream<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData,
-      File modelPath,
-      File trainingDataDump) {
+          Stream<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData,
+          File modelPath,
+          File trainingDataDump) {
     return train(trainingData, Optional.of(modelPath), Optional.of(trainingDataDump), ClauseSplitterSearchProblem.DEFAULT_FEATURIZER);
   }
 
@@ -297,4 +303,6 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
       throw new IllegalStateException("Invalid model at path: " + serializedModel, e);
     }
   }
+
+
 }

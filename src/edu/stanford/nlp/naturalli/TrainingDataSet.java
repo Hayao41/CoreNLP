@@ -67,7 +67,7 @@ public class TrainingDataSet {
                 endTrack("Processing treebanks");
             }
 
-            test(dataset);
+            //test(dataset);
 
             if(properties.getProperty("trained").equals("false")){
                 forceTrack("Training");
