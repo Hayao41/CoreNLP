@@ -128,6 +128,10 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         return new SemanticGraph(parser.newGrammaticalStructure(tree).typedDependenciesCollapsed());
     }
 
+    public static SemanticGraph parse2dependency(Tree tree) {
+        return new SemanticGraph(parser.newGrammaticalStructure(tree).typedDependenciesCollapsed());
+    }
+
     /**
      * Create a dataset of subject/object pairs, such that a sequence of splits that segments this
      * subject and object is a correct sequence.
@@ -284,13 +288,15 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
     }
 
 
-    private static List<Pair<CoreMap, Collection<Pair<Span, Span>>>> processTrees(List<Tree> parse_trees){
+    private static List<Pair<CoreMap, Collection<Pair<Span, Span>>>> processTrees(List<String> sentences, List<Tree> parse_trees)throws Exception{
         forceTrack("Processing Parse Trees");
 
         // Prepare the files to iterate over
         int numTreesProcessed = 0;
         List<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData = new ArrayList<>(1024);
-        for(Tree tree : parse_trees){
+        for(int index = 0; index < parse_trees.size(); index ++){
+                Tree tree = parse_trees.get(index);
+                String sentenceText = sentences.get(index);
                 // Prepare the tree
                 tree.indexSpans();
                 tree.setSpans();
@@ -305,11 +311,13 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
                 Map<Integer, Integer> sources = findTraceSources(tree);
 
                 // Create a sentence object
-                CoreMap sentence = new ArrayCoreMap(4) {{
+                CoreMap sentence = new ArrayCoreMap(6) {{
                     set(CoreAnnotations.TokensAnnotation.class, tokens);
                     set(SemanticGraphCoreAnnotations.BasicDependenciesAnnotation.class, graph);
                     set(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class, graph);
                     set(SemanticGraphCoreAnnotations.EnhancedPlusPlusDependenciesAnnotation.class, graph);
+                    set(ExtendedSemanticGraphCoreAnnotations.SenetceText.class,sentenceText);
+                    set(ExtendedSemanticGraphCoreAnnotations.ParseTree.class, tree);
                 }};
                 natlog.doOneSentence(null, sentence);
 
@@ -362,7 +370,8 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
             }
             segment = matcher.group();
             segment = segment.substring(1,segment.length()-1);
-            decodeHtml(segment);
+            segment = decodeHtml(segment);
+            annotatedSentences.add(segment);
         }
         return annotatedSentences;
     }
@@ -370,7 +379,9 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
     public static Connection conn2database()throws Exception{
         Class.forName("com.mysql.jdbc.Driver").newInstance();
         Connection connection = null;
-        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
+        //connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
+        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test_dataset?user=root&password=rootpass123!@#");
+
 //        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=20080808qwejkl");
         if(connection != null){
             System.out.println("Connect to mysql/nlp422 successfully!");
@@ -389,7 +400,8 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         PreparedStatement stmt = null;
         String sql_s = "INSERT INTO sentence(sentence.sid, sentence.sentence, sentence.parse_tree) VALUES(?,?,?)";
         String sql_l = "INSERT INTO location(location.sid, location.start_left, location.start_right, location.end_left, location.end_right) VALUES(?,?,?,?,?)";
-
+        String sql_a = "SELECT COUNT(*) column_count FROM sentence";
+        String sql_c = "SELECT COUNT(*) target_count FROM sentence WHERE sentence.sid = ?";
         //iterate all sentences
         for(int i = 0; i < sentences.size(); i++){
 
@@ -397,6 +409,25 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
             String sentence_num = "S#" + i;
             Tree parse_tree = parse_trees.get(i);
             Collection<Pair<Span, Span>> locations = dataset.get(i).second;
+            ResultSet rs = null;
+            stmt = connection.prepareStatement(sql_c);
+            stmt.setString(1, sentence_num);
+            rs = stmt.executeQuery();
+            int target_count = 0;
+            while (rs.next()){
+                target_count = rs.getInt("target_count");
+            }
+            if(target_count != 0){
+                stmt.close();
+                stmt = connection.prepareStatement(sql_a);
+                rs = stmt.executeQuery();
+                int column_count = 0;
+                while (rs.next()){
+                    column_count = rs.getInt("column_count");
+                }
+                sentence_num = "S#" + column_count;
+                stmt.close();
+            }
 
             //saving sentence's all attributes to database
             stmt = connection.prepareStatement(sql_s);
@@ -452,7 +483,9 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         rs.close();
         for(int i = 0; i < sentences.size(); i ++){
             System.out.println("Processing sentence : S#" + i);
-            Tree tree = Tree.valueOf(sentences.get(i).getParse_tree(), new LabeledScoredTreeReaderFactory());
+            Senetnce senetnce = sentences.get(i);
+            String text = senetnce.getSentence();
+            Tree tree = Tree.valueOf(senetnce.getParse_tree(), new LabeledScoredTreeReaderFactory());
             tree.indexSpans();
             tree.setSpans();
             List<CoreLabel> tokens = tree.getLeaves().stream().map(leaf -> (CoreLabel) leaf.label()).collect(Collectors.toList());
@@ -461,11 +494,13 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
             Map<Integer, Integer> sources = findTraceSources(tree);
 
             // Create a sentence object
-            CoreMap coreMap = new ArrayCoreMap(4) {{
+            CoreMap coreMap = new ArrayCoreMap(6) {{
                 set(CoreAnnotations.TokensAnnotation.class, tokens);
                 set(SemanticGraphCoreAnnotations.BasicDependenciesAnnotation.class, graph);
                 set(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class, graph);
                 set(SemanticGraphCoreAnnotations.EnhancedPlusPlusDependenciesAnnotation.class, graph);
+                set(ExtendedSemanticGraphCoreAnnotations.SenetceText.class, text);
+                set(ExtendedSemanticGraphCoreAnnotations.ParseTree.class, tree);
             }};
             natlog.doOneSentence(null, coreMap);
             sentences.get(i).setCoreMap(coreMap);
@@ -497,16 +532,37 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
             throw new Exception("Input sentence data is empty,please try to check your data");
         List<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData = null;
         List<Tree> parse_trees = sent2trees(senetnces);
-        trainingData = processTrees(parse_trees);
+        trainingData = processTrees(senetnces, parse_trees);
         forceTrack("Saving dataset to database");
         savedataset(senetnces, trainingData, parse_trees);
         endTrack("Saving dataset to database");
         return trainingData;
     }
 
-    public static void decodeHtml(String str) {
+    public static String decodeHtml(String str) {
         str = StringEscapeUtils.unescapeHtml4(str);
         if (str.contains("&"))
             str = StringEscapeUtils.unescapeHtml4(str);
+        return str;
+    }
+
+    public static Pair<String, String> getSubobjPair(SemanticGraph senetnce, Pair<Span, Span> spanPair){
+        Pair<String, String> subobjpair = new Pair<String, String>();
+        List<IndexedWord> words = senetnce.vertexListSorted();
+        String sub_text = "";
+        String obj_text = "";
+        Span sub_span = spanPair.first;
+        Span obj_span = spanPair.second;
+        for(int sub_index = sub_span.start(); sub_index < sub_span.end(); sub_index++){
+            sub_text += words.get(sub_index).word() + " ";
+        }
+        for(int obj_index = obj_span.start(); obj_index < obj_span.end(); obj_index++){
+            obj_text += words.get(obj_index).word() + " ";
+        }
+        sub_text = sub_text.substring(0, sub_text.length() - 1);
+        obj_text = obj_text.substring(0, obj_text.length() - 1);
+        subobjpair.first = sub_text;
+        subobjpair.second = obj_text;
+        return subobjpair;
     }
 }

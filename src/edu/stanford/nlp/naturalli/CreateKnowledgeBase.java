@@ -18,7 +18,7 @@ public class CreateKnowledgeBase {
     public static void main(String[] args) {
         try{
             Connection connection = RelationDataPreprocessing.conn2database();
-            String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv";
+            String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences2.csv";
             String url2 = "G:\\ideaprojects\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv";
             String sql = "insert into knowledgebase(sid,entity,slotValue,entityCharOffsetBegin,entityCharOffsetEnd,slotValueCharOffsetBegin,slotValueCharOffsetEnd)values(?,?,?,?,?,?,?)";
             BufferedReader reader = new BufferedReader(new FileReader(url));
@@ -36,9 +36,9 @@ public class CreateKnowledgeBase {
                     String senetnce = values[4];
                     String entity = values[5];
                     String slotValue = values[8];
-                    RelationDataPreprocessing.decodeHtml(senetnce);
-                    RelationDataPreprocessing.decodeHtml(entity);
-                    RelationDataPreprocessing.decodeHtml(slotValue);
+                    senetnce = RelationDataPreprocessing.decodeHtml(senetnce);
+                    entity = RelationDataPreprocessing.decodeHtml(entity);
+                    slotValue = RelationDataPreprocessing.decodeHtml(slotValue);
                     int entityCharOffsetBegin = senetnce.indexOf(entity);
                     int entityCharOffsetEnd = entityCharOffsetBegin + entity.length();
                     int slotValueCharOffsetBegin = senetnce.indexOf(slotValue);

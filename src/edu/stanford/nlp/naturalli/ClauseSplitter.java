@@ -114,6 +114,14 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
       Collection<Pair<Span, Span>> spans = rawExample.second;//relation entity collection
       List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);//POS tag of sentence
       SemanticGraph tree = sentence.get(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class);//semantic tree of sentence
+      String sentenceText = sentence.get(ExtendedSemanticGraphCoreAnnotations.SenetceText.class);
+      System.out.println(sentenceText);
+      Pair<Span, Span> span_pair = null;
+      for (Pair<Span, Span> temp : spans){
+        span_pair = temp;
+        break;
+      }
+      Pair<String, String> subobjPair = RelationDataPreprocessing.getSubobjPair(tree, span_pair);
       // Create raw clause searcher (no classifier)
       ClauseSplitterSearchProblem problem = new ClauseSplitterSearchProblem(tree, true);
 
