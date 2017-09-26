@@ -1,7 +1,6 @@
 package edu.stanford.nlp.naturalli;
 
 import edu.stanford.nlp.classify.*;
-import edu.stanford.nlp.ie.machinereading.structure.Relation;
 import edu.stanford.nlp.ie.machinereading.structure.Span;
 import edu.stanford.nlp.ie.util.RelationTriple;
 import edu.stanford.nlp.io.IOUtils;
@@ -87,7 +86,18 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
           Stream<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData,
           Optional<File> modelPath,
           Optional<File> trainingDataDump,
-          Featurizer featurizer) {
+          Featurizer featurizer) throws IOException{
+
+    Properties properties = new Properties();
+    InputStream in = new FileInputStream(new File("D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\naturalli\\properties\\datasetproperties.properties"));
+    properties.load(in);
+    in.close();
+
+    String mapping = properties.getProperty("mapping");
+
+    List<Pair<String, String>> kb = RelationDataPreprocessing.getKnowledgeBase();
+
+    System.out.println("Size of KB is : " + kb.size());
 
     // Parse options
     LinearClassifierFactory<ClauseClassifierLabel, String> factory = new LinearClassifierFactory<>();
@@ -126,46 +136,57 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
 
         // Search for extractions
         Set<RelationTriple> extractions = new HashSet<>(openie.relationsInFragments(openie.entailmentsFromClause(fragment)));
+        if(extractions.size() != 0 && features.size() != 0){
+          System.out.println(fragment.toString());
+        }
         Trilean correct = Trilean.FALSE;
         RELATION_TRIPLE_LOOP: for (RelationTriple extraction : extractions) {
 
-          //the block added by myself
-
-          Pair<String, String> governor = RelationDataPreprocessing.revert2governor(extraction);
-
-          //the block added by myself
-
-          // Clean up the guesses
-          Span subjectGuess = Span.fromValues(extraction.subject.get(0).index() - 1, extraction.subject.get(extraction.subject.size() - 1).index());
-          Span objectGuess = Span.fromValues(extraction.object.get(0).index() - 1, extraction.object.get(extraction.object.size() - 1).index());
-          for (Pair<Span, Span> candidateGold : spans) {
-            Span subjectSpan = candidateGold.first;
-            Span objectSpan = candidateGold.second;
-            // Check if it matches
-            if ((subjectGuess.equals(subjectSpan) && objectGuess.equals(objectSpan)) ||
-                    (subjectGuess.equals(objectSpan) && objectGuess.equals(subjectSpan))
-                    ) {
-              correct = Trilean.TRUE;
-              break RELATION_TRIPLE_LOOP;
-            } else if (Util.nerOverlap(tokens, subjectSpan, subjectGuess) && Util.nerOverlap(tokens, objectSpan, objectGuess) ||
-                    Util.nerOverlap(tokens, subjectSpan, objectGuess) && Util.nerOverlap(tokens, objectSpan, subjectGuess)) {
-              if (!correct.isTrue()) {
+          if(mapping.equals("span")){
+            // Clean up the guesses
+            Span subjectGuess = Span.fromValues(extraction.subject.get(0).index() - 1, extraction.subject.get(extraction.subject.size() - 1).index());
+            Span objectGuess = Span.fromValues(extraction.object.get(0).index() - 1, extraction.object.get(extraction.object.size() - 1).index());
+            for (Pair<Span, Span> candidateGold : spans) {
+              Span subjectSpan = candidateGold.first;
+              Span objectSpan = candidateGold.second;
+              // Check if it matches
+              if ((subjectGuess.equals(subjectSpan) && objectGuess.equals(objectSpan)) ||
+                      (subjectGuess.equals(objectSpan) && objectGuess.equals(subjectSpan))
+                      ) {
+                correct = Trilean.TRUE;
+                break RELATION_TRIPLE_LOOP;
+              } else if (Util.nerOverlap(tokens, subjectSpan, subjectGuess) && Util.nerOverlap(tokens, objectSpan, objectGuess) ||
+                      Util.nerOverlap(tokens, subjectSpan, objectGuess) && Util.nerOverlap(tokens, objectSpan, subjectGuess)) {
+                if (!correct.isTrue()) {
+                  correct = Trilean.TRUE;
+                  break RELATION_TRIPLE_LOOP;
+                }
+              } else {
+                if (!correct.isTrue()) {
+                  correct = Trilean.UNKNOWN;
+                  break RELATION_TRIPLE_LOOP;
+                }
+              }
+            }
+          }else{
+            //clean and get the governor guess
+            Pair<String, String> governor = RelationDataPreprocessing.revert2governor(extraction);
+            String subjectGuess_str = governor.first;
+            String objectGuess_str = governor.second;
+            MAPPING_2_KB: for(Pair<String, String> tuple : kb){
+              String entity = tuple.first;
+              String slotValue = tuple.second;
+              if( ( (entity.contains(subjectGuess_str) || subjectGuess_str.contains(entity)) && (slotValue.contains(objectGuess_str) || objectGuess_str.contains(slotValue)) ) ||
+                      ( (slotValue.contains(subjectGuess_str) || subjectGuess_str.contains(slotValue)) && (entity.contains(objectGuess_str) || objectGuess_str.contains(entity)) ) ){
                 correct = Trilean.TRUE;
                 break RELATION_TRIPLE_LOOP;
               }
-            } else {
-              if (!correct.isTrue()) {
-                correct = Trilean.UNKNOWN;
-                break RELATION_TRIPLE_LOOP;
-              }
+            }
+            if(!correct.isTrue()){
+              correct = Trilean.UNKNOWN;
+              break RELATION_TRIPLE_LOOP;
             }
           }
-
-          //the test block should added by myself
-
-          /*very important!*/
-
-          //the test block should added by myself
         }
 
         // Process the datum
@@ -280,7 +301,7 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
   static ClauseSplitter train(
           Stream<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData,
           File modelPath,
-          File trainingDataDump) {
+          File trainingDataDump) throws IOException{
     return train(trainingData, Optional.of(modelPath), Optional.of(trainingDataDump), ClauseSplitterSearchProblem.DEFAULT_FEATURIZER);
   }
 

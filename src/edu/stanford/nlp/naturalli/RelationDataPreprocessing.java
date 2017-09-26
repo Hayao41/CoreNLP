@@ -297,7 +297,6 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         List<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData = new ArrayList<>(1024);
         for(int index = 0; index < parse_trees.size(); index ++){
                 Tree tree = parse_trees.get(index);
-                String sentenceText = sentences.get(index);
                 // Prepare the tree
                 tree.indexSpans();
                 tree.setSpans();
@@ -312,13 +311,11 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
                 Map<Integer, Integer> sources = findTraceSources(tree);
 
                 // Create a sentence object
-                CoreMap sentence = new ArrayCoreMap(6) {{
+                CoreMap sentence = new ArrayCoreMap(4) {{
                     set(CoreAnnotations.TokensAnnotation.class, tokens);
                     set(SemanticGraphCoreAnnotations.BasicDependenciesAnnotation.class, graph);
                     set(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class, graph);
                     set(SemanticGraphCoreAnnotations.EnhancedPlusPlusDependenciesAnnotation.class, graph);
-                    set(ExtendedSemanticGraphCoreAnnotations.SenetceText.class,sentenceText);
-                    set(ExtendedSemanticGraphCoreAnnotations.ParseTree.class, tree);
                 }};
                 natlog.doOneSentence(null, sentence);
 
@@ -380,8 +377,8 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
     public static Connection conn2database()throws Exception{
         Class.forName("com.mysql.jdbc.Driver").newInstance();
         Connection connection = null;
-        //connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
-        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test_dataset?user=root&password=rootpass123!@#");
+        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
+        //connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test_dataset?user=root&password=rootpass123!@#");
 
 //        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=20080808qwejkl");
         if(connection != null){
@@ -485,23 +482,18 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         for(int i = 0; i < sentences.size(); i ++){
             System.out.println("Processing sentence : S#" + i);
             Senetnce senetnce = sentences.get(i);
-            String text = senetnce.getSentence();
             Tree tree = Tree.valueOf(senetnce.getParse_tree(), new LabeledScoredTreeReaderFactory());
             tree.indexSpans();
             tree.setSpans();
             List<CoreLabel> tokens = tree.getLeaves().stream().map(leaf -> (CoreLabel) leaf.label()).collect(Collectors.toList());
             SemanticGraph graph = parse(tree);
-            Map<Integer, Span> targets = findTraceTargets(tree);
-            Map<Integer, Integer> sources = findTraceSources(tree);
 
             // Create a sentence object
-            CoreMap coreMap = new ArrayCoreMap(6) {{
+            CoreMap coreMap = new ArrayCoreMap(4) {{
                 set(CoreAnnotations.TokensAnnotation.class, tokens);
                 set(SemanticGraphCoreAnnotations.BasicDependenciesAnnotation.class, graph);
                 set(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class, graph);
                 set(SemanticGraphCoreAnnotations.EnhancedPlusPlusDependenciesAnnotation.class, graph);
-                set(ExtendedSemanticGraphCoreAnnotations.SenetceText.class, text);
-                set(ExtendedSemanticGraphCoreAnnotations.ParseTree.class, tree);
             }};
             natlog.doOneSentence(null, coreMap);
             sentences.get(i).setCoreMap(coreMap);
@@ -585,4 +577,29 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         governor.second = objText;
         return governor;
     }
+
+    public static List<Pair<String, String>> getKnowledgeBase(){
+        ArrayList<Pair<String, String>> kb = new ArrayList<>();
+        try{
+            Connection connection = conn2database();
+            String sql = "select entity, slotValue from knowledgebase";
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery(sql);
+            while (resultSet.next()){
+                String entity = resultSet.getString(1);
+                String slotValue = resultSet.getString(2);
+                Pair<String, String> tuple = new Pair<>();
+                tuple.first = entity;
+                tuple.second = slotValue;
+                kb.add(tuple);
+            }
+            resultSet.close();
+            statement.close();
+            connection.close();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return kb;
+    }
+
 }

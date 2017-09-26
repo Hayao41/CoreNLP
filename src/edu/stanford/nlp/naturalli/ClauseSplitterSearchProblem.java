@@ -357,7 +357,7 @@ public class ClauseSplitterSearchProblem  {
     for (IndexedWord vertex : tree.vertexSet()) {
       for (SemanticGraphEdge edge : extraEdgesByDependent.get(vertex)) {
         if ("ref".equals(edge.getRelation().toString()) &&  // it's a ref edge...
-            !tree.containsVertex(edge.getGovernor())) {     // ...that doesn't already exist in the tree.
+                !tree.containsVertex(edge.getGovernor())) {     // ...that doesn't already exist in the tree.
           refReplaceMap.put(vertex, edge.getGovernor());
         }
       }
@@ -370,7 +370,7 @@ public class ClauseSplitterSearchProblem  {
       IndexedWord governor = incomingEdge.getGovernor();
       tree.removeVertex(entry.getKey());
       addSubtree(tree, governor, incomingEdge.getRelation().toString(),
-          this.tree, entry.getValue(), this.tree.incomingEdgeList(tree.getFirstRoot()));
+              this.tree, entry.getValue(), this.tree.incomingEdgeList(tree.getFirstRoot()));
     }
 
   }
@@ -525,19 +525,19 @@ public class ClauseSplitterSearchProblem  {
   public void search(final Predicate<Triple<Double, List<Counter<String>>, Supplier<SentenceFragment>>> candidateFragments) {
     if (!isClauseClassifier.isPresent()) {
       search(candidateFragments,
-          new LinearClassifier<>(new ClassicCounter<>()),
-          HARD_SPLITS,
-          this.featurizer.isPresent() ? this.featurizer.get() : DEFAULT_FEATURIZER,
-          1000);
+              new LinearClassifier<>(new ClassicCounter<>()),
+              HARD_SPLITS,
+              this.featurizer.isPresent() ? this.featurizer.get() : DEFAULT_FEATURIZER,
+              1000);
     } else {
       if (!(isClauseClassifier.get() instanceof LinearClassifier)) {
         throw new IllegalArgumentException("For now, only linear classifiers are supported");
       }
       search(candidateFragments,
-          isClauseClassifier.get(),
-          HARD_SPLITS,
-          this.featurizer.get(),
-          1000);
+              isClauseClassifier.get(),
+              HARD_SPLITS,
+              this.featurizer.get(),
+              1000);
     }
   }
 
@@ -553,13 +553,13 @@ public class ClauseSplitterSearchProblem  {
    * @param featurizer The featurizer to use during search, to be dot producted with the weights.
    */
   public void search(
-      // The output specs
-      final Predicate<Triple<Double, List<Counter<String>>, Supplier<SentenceFragment>>> candidateFragments,
-      // The learning specs
-      final Classifier<ClauseSplitter.ClauseClassifierLabel, String> classifier,
-      final Map<String, List<String>> hardCodedSplits,
-      final Function<Triple<State, Action, State>, Counter<String>> featurizer,
-      final int maxTicks
+          // The output specs
+          final Predicate<Triple<Double, List<Counter<String>>, Supplier<SentenceFragment>>> candidateFragments,
+          // The learning specs
+          final Classifier<ClauseSplitter.ClauseClassifierLabel, String> classifier,
+          final Map<String, List<String>> hardCodedSplits,
+          final Function<Triple<State, Action, State>, Counter<String>> featurizer,
+          final int maxTicks
   ) {
     Collection<Action> actionSpace = new ArrayList<>();
 
@@ -579,18 +579,18 @@ public class ClauseSplitterSearchProblem  {
       @Override
       public Optional<State> applyTo(SemanticGraph tree, State source, SemanticGraphEdge outgoingEdge, SemanticGraphEdge subjectOrNull, SemanticGraphEdge objectOrNull) {
         return Optional.of(new State(
-            outgoingEdge,
-            subjectOrNull == null ? source.subjectOrNull : subjectOrNull,
-            subjectOrNull == null ? (source.distanceFromSubj + 1) : 0,
-            objectOrNull == null ? source.objectOrNull : objectOrNull,
-            source.thunk.andThen(toModify -> {
-              assert Util.isTree(toModify);
-              simpleClause(toModify, outgoingEdge);
-              if (outgoingEdge.getRelation().toString().endsWith("comp")) {
-                stripAuxMark(toModify);
-              }
-              assert Util.isTree(toModify);
-            }), false
+                outgoingEdge,
+                subjectOrNull == null ? source.subjectOrNull : subjectOrNull,
+                subjectOrNull == null ? (source.distanceFromSubj + 1) : 0,
+                objectOrNull == null ? source.objectOrNull : objectOrNull,
+                source.thunk.andThen(toModify -> {
+                  assert Util.isTree(toModify);
+                  simpleClause(toModify, outgoingEdge);
+                  if (outgoingEdge.getRelation().toString().endsWith("comp")) {
+                    stripAuxMark(toModify);
+                  }
+                  assert Util.isTree(toModify);
+                }), false
         ));
       }
     });
@@ -627,17 +627,17 @@ public class ClauseSplitterSearchProblem  {
       @Override
       public Optional<State> applyTo(SemanticGraph tree, State source, SemanticGraphEdge outgoingEdge, SemanticGraphEdge subjectOrNull, SemanticGraphEdge objectOrNull) {
         return Optional.of(new State(
-            outgoingEdge,
-            subjectOrNull == null ? source.subjectOrNull : subjectOrNull,
-            subjectOrNull == null ? (source.distanceFromSubj + 1) : 0,
-            objectOrNull == null ? source.objectOrNull : objectOrNull,
-            source.thunk.andThen(toModify -> {
-              assert Util.isTree(toModify);
-              simpleClause(toModify, outgoingEdge);
-              addSubtree(toModify, outgoingEdge.getDependent(), "nsubjpass", tree, outgoingEdge.getGovernor(), Collections.singleton(outgoingEdge));
+                outgoingEdge,
+                subjectOrNull == null ? source.subjectOrNull : subjectOrNull,
+                subjectOrNull == null ? (source.distanceFromSubj + 1) : 0,
+                objectOrNull == null ? source.objectOrNull : objectOrNull,
+                source.thunk.andThen(toModify -> {
+                  assert Util.isTree(toModify);
+                  simpleClause(toModify, outgoingEdge);
+                  addSubtree(toModify, outgoingEdge.getDependent(), "nsubjpass", tree, outgoingEdge.getGovernor(), Collections.singleton(outgoingEdge));
 //              addWord(toModify, outgoingEdge.getDependent(), "auxpass", mockNode(outgoingEdge.getDependent().backingLabel(), "is", "VBZ"));
-              assert Util.isTree(toModify);
-            }), true
+                  assert Util.isTree(toModify);
+                }), true
         ));
       }
     });
@@ -664,19 +664,19 @@ public class ClauseSplitterSearchProblem  {
       public Optional<State> applyTo(SemanticGraph tree, State source, SemanticGraphEdge outgoingEdge, SemanticGraphEdge subjectOrNull, SemanticGraphEdge objectOrNull) {
         if (subjectOrNull != null && !outgoingEdge.equals(subjectOrNull)) {
           return Optional.of(new State(
-              outgoingEdge,
-              subjectOrNull,
-              0,
-              objectOrNull == null ? source.objectOrNull : objectOrNull,
-              source.thunk.andThen(toModify -> {
-                assert Util.isTree(toModify);
-                simpleClause(toModify, outgoingEdge);
-                addSubtree(toModify, outgoingEdge.getDependent(), "nsubj", tree,
-                    subjectOrNull.getDependent(), Collections.singleton(outgoingEdge));
-                assert Util.isTree(toModify);
-                stripAuxMark(toModify);
-                assert Util.isTree(toModify);
-              }), false
+                  outgoingEdge,
+                  subjectOrNull,
+                  0,
+                  objectOrNull == null ? source.objectOrNull : objectOrNull,
+                  source.thunk.andThen(toModify -> {
+                    assert Util.isTree(toModify);
+                    simpleClause(toModify, outgoingEdge);
+                    addSubtree(toModify, outgoingEdge.getDependent(), "nsubj", tree,
+                            subjectOrNull.getDependent(), Collections.singleton(outgoingEdge));
+                    assert Util.isTree(toModify);
+                    stripAuxMark(toModify);
+                    assert Util.isTree(toModify);
+                  }), false
           ));
         } else {
           return Optional.empty();
@@ -706,22 +706,22 @@ public class ClauseSplitterSearchProblem  {
       public Optional<State> applyTo(SemanticGraph tree, State source, SemanticGraphEdge outgoingEdge, SemanticGraphEdge subjectOrNull, SemanticGraphEdge objectOrNull) {
         if (objectOrNull != null && !outgoingEdge.equals(objectOrNull)) {
           return Optional.of(new State(
-              outgoingEdge,
-              subjectOrNull == null ? source.subjectOrNull : subjectOrNull,
-              subjectOrNull == null ? (source.distanceFromSubj + 1) : 0,
-              objectOrNull,
-              source.thunk.andThen(toModify -> {
-                assert Util.isTree(toModify);
-                // Split the clause
-                simpleClause(toModify, outgoingEdge);
-                // Attach the new subject
-                addSubtree(toModify, outgoingEdge.getDependent(), "nsubj", tree,
-                    objectOrNull.getDependent(), Collections.singleton(outgoingEdge));
-                // Strip bits we don't want
-                assert Util.isTree(toModify);
-                stripAuxMark(toModify);
-                assert Util.isTree(toModify);
-              }), false
+                  outgoingEdge,
+                  subjectOrNull == null ? source.subjectOrNull : subjectOrNull,
+                  subjectOrNull == null ? (source.distanceFromSubj + 1) : 0,
+                  objectOrNull,
+                  source.thunk.andThen(toModify -> {
+                    assert Util.isTree(toModify);
+                    // Split the clause
+                    simpleClause(toModify, outgoingEdge);
+                    // Attach the new subject
+                    addSubtree(toModify, outgoingEdge.getDependent(), "nsubj", tree,
+                            objectOrNull.getDependent(), Collections.singleton(outgoingEdge));
+                    // Strip bits we don't want
+                    assert Util.isTree(toModify);
+                    stripAuxMark(toModify);
+                    assert Util.isTree(toModify);
+                  }), false
           ));
         } else {
           return Optional.empty();
@@ -772,16 +772,16 @@ public class ClauseSplitterSearchProblem  {
    * @param actionSpace The action space we are allowed to take. Each action defines a means of splitting a clause on a dependency boundary.
    */
   protected void search(
-      // The root to search from
-      IndexedWord root,
-      // The output specs
-      final Predicate<Triple<Double, List<Counter<String>>, Supplier<SentenceFragment>>> candidateFragments,
-      // The learning specs
-      final Classifier<ClauseSplitter.ClauseClassifierLabel,String> classifier,
-      Map<String, ? extends List<String>> hardCodedSplits,
-      final Function<Triple<State, Action, State>, Counter<String>> featurizer,
-      final Collection<Action> actionSpace,
-      final int maxTicks
+          // The root to search from
+          IndexedWord root,
+          // The output specs
+          final Predicate<Triple<Double, List<Counter<String>>, Supplier<SentenceFragment>>> candidateFragments,
+          // The learning specs
+          final Classifier<ClauseSplitter.ClauseClassifierLabel,String> classifier,
+          Map<String, ? extends List<String>> hardCodedSplits,
+          final Function<Triple<State, Action, State>, Counter<String>> featurizer,
+          final Collection<Action> actionSpace,
+          final int maxTicks
   ) {
     // (the fringe)
     PriorityQueue<Pair<State, List<Counter<String>>>> fringe = new FixedPrioritiesPriorityQueue<>();
@@ -848,8 +848,8 @@ public class ClauseSplitterSearchProblem  {
         // (e.g., 'said', 'think')
         // This fires if the governor is an indirect speech verb, and the outgoing edge is a ccomp
         if ( outgoingEdge.getRelation().toString().equals("ccomp") &&
-             ( (outgoingEdge.getGovernor().lemma() != null && INDIRECT_SPEECH_LEMMAS.contains(outgoingEdge.getGovernor().lemma())) ||
-                INDIRECT_SPEECH_LEMMAS.contains(outgoingEdge.getGovernor().word())) ) {
+                ( (outgoingEdge.getGovernor().lemma() != null && INDIRECT_SPEECH_LEMMAS.contains(outgoingEdge.getGovernor().lemma())) ||
+                        INDIRECT_SPEECH_LEMMAS.contains(outgoingEdge.getGovernor().word())) ) {
           continue;
         }
         // Get some variables
@@ -870,8 +870,8 @@ public class ClauseSplitterSearchProblem  {
           }
           // 1. Compute the child state
           Optional<State> candidate = action.applyTo(tree, lastState,
-              outgoingEdge, subjOrNull,
-              objOrNull);
+                  outgoingEdge, subjOrNull,
+                  objOrNull);
           if (candidate.isPresent()) {
             double logProbability;
             ClauseClassifierLabel bestLabel;
