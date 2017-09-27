@@ -7,6 +7,7 @@ import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.io.RuntimeIOException;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.ling.RVFDatum;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
@@ -15,6 +16,7 @@ import edu.stanford.nlp.stats.Counter;
 import edu.stanford.nlp.util.*;
 
 import java.io.*;
+import java.sql.Connection;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
@@ -86,12 +88,13 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
           Stream<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData,
           Optional<File> modelPath,
           Optional<File> trainingDataDump,
-          Featurizer featurizer) throws IOException{
+          Featurizer featurizer) throws Exception{
 
     Properties properties = new Properties();
     InputStream in = new FileInputStream(new File("D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\naturalli\\properties\\datasetproperties.properties"));
     properties.load(in);
     in.close();
+    Connection connection = RelationDataPreprocessing.conn2database();
 
     String mapping = properties.getProperty("mapping");
 
@@ -133,6 +136,8 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
         // Parse the search callback
         List<Counter<String>> features = fragmentAndScore.second;
         SentenceFragment fragment = fragmentAndScore.third.get();
+        IndexedWord current_node = ((ExtendedSentenceFragement) fragment).getRoot();
+        boolean recored_mark = false;
 
         // Search for extractions
         Set<RelationTriple> extractions = new HashSet<>(openie.relationsInFragments(openie.entailmentsFromClause(fragment)));
@@ -179,13 +184,18 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
               if( ( (entity.contains(subjectGuess_str) || subjectGuess_str.contains(entity)) && (slotValue.contains(objectGuess_str) || objectGuess_str.contains(slotValue)) ) ||
                       ( (slotValue.contains(subjectGuess_str) || subjectGuess_str.contains(slotValue)) && (entity.contains(objectGuess_str) || objectGuess_str.contains(entity)) ) ){
                 correct = Trilean.TRUE;
+                recored_mark = true;
                 break RELATION_TRIPLE_LOOP;
               }
             }
             if(!correct.isTrue()){
               correct = Trilean.UNKNOWN;
+              recored_mark = true;
               break RELATION_TRIPLE_LOOP;
             }
+          }
+          if(recored_mark){
+
           }
         }
 
@@ -301,7 +311,7 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
   static ClauseSplitter train(
           Stream<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData,
           File modelPath,
-          File trainingDataDump) throws IOException{
+          File trainingDataDump) throws Exception{
     return train(trainingData, Optional.of(modelPath), Optional.of(trainingDataDump), ClauseSplitterSearchProblem.DEFAULT_FEATURIZER);
   }
 

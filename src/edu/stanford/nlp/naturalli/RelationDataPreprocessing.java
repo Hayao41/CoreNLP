@@ -377,8 +377,8 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
     public static Connection conn2database()throws Exception{
         Class.forName("com.mysql.jdbc.Driver").newInstance();
         Connection connection = null;
-        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
-        //connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test_dataset?user=root&password=rootpass123!@#");
+        //connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
+        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test_dataset?user=root&password=rootpass123!@#");
 
 //        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=20080808qwejkl");
         if(connection != null){

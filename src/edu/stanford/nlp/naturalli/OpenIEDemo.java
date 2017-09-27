@@ -42,7 +42,9 @@ public class OpenIEDemo {
       //text = "Obama was born in Hawaii, he is our president.";
       //text = "Born in a small town,she took the midnight train going anywhere.";
       //text = "Born in Honolulu,Obama is a US Citizen.";
-      text = "Microsoft co-founder Bill Gates spoke in New York city";
+      //text = "Microsoft's co-founder Bill Gates spoke in New York city";
+      //text = "Alexandra of Denmark ( 1844 - 1925 ) was Queen Consort to Edward VII of the United Kingdom and thus Empress of India during her husband's reign.";
+      text = "Bill's bike is Penn";
     }
     Annotation doc = new Annotation(text);
     pipeline.annotate(doc);
