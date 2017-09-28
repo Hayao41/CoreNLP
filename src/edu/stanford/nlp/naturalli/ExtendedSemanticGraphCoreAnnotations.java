@@ -19,4 +19,11 @@ public class ExtendedSemanticGraphCoreAnnotations extends SemanticGraphCoreAnnot
             return Tree.class;
         }
     }
+
+    public static class SnetenceID implements  CoreAnnotation<String>{
+        @Override
+        public Class<String>getType(){
+            return String.class;
+        }
+    }
 }

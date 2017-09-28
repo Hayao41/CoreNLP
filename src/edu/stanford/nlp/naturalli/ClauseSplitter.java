@@ -128,6 +128,7 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
       Collection<Pair<Span, Span>> spans = rawExample.second;
       List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
       SemanticGraph tree = sentence.get(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class);
+      String snetenceID = sentence.get(ExtendedSemanticGraphCoreAnnotations.SnetenceID.class);
       // Create raw clause searcher (no classifier)
       ClauseSplitterSearchProblem problem = new ClauseSplitterSearchProblem(tree, true);
 
@@ -137,13 +138,11 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
         List<Counter<String>> features = fragmentAndScore.second;
         SentenceFragment fragment = fragmentAndScore.third.get();
         IndexedWord current_node = ((ExtendedSentenceFragement) fragment).getRoot();
-        boolean recored_mark = false;
+        int rootNode_index = current_node.index();
+        boolean record_mark = false;
 
         // Search for extractions
         Set<RelationTriple> extractions = new HashSet<>(openie.relationsInFragments(openie.entailmentsFromClause(fragment)));
-        if(extractions.size() != 0 && features.size() != 0){
-          System.out.println(fragment.toString());
-        }
         Trilean correct = Trilean.FALSE;
         RELATION_TRIPLE_LOOP: for (RelationTriple extraction : extractions) {
 
@@ -184,18 +183,23 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
               if( ( (entity.contains(subjectGuess_str) || subjectGuess_str.contains(entity)) && (slotValue.contains(objectGuess_str) || objectGuess_str.contains(slotValue)) ) ||
                       ( (slotValue.contains(subjectGuess_str) || subjectGuess_str.contains(slotValue)) && (entity.contains(objectGuess_str) || objectGuess_str.contains(entity)) ) ){
                 correct = Trilean.TRUE;
-                recored_mark = true;
+                record_mark = true;
                 break RELATION_TRIPLE_LOOP;
               }
             }
             if(!correct.isTrue()){
               correct = Trilean.UNKNOWN;
-              recored_mark = true;
+              record_mark = true;
               break RELATION_TRIPLE_LOOP;
             }
           }
-          if(recored_mark){
+        }
 
+        if(record_mark){
+          try{
+            RelationDataPreprocessing.saveAnnotation2DataBase(connection, rootNode_index, snetenceID);
+          }catch (Exception e){
+            e.printStackTrace();
           }
         }
 
@@ -260,6 +264,7 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
         log("processed " + numExamplesProcessed + " training sentences: " + dataset.size() + " datums");
       }
     });
+    connection.close();
     endTrack("Training inference");
 
     // Close the file
@@ -334,6 +339,5 @@ public interface ClauseSplitter extends BiFunction<SemanticGraph, Boolean, Claus
       throw new IllegalStateException("Invalid model at path: " + serializedModel, e);
     }
   }
-
 
 }

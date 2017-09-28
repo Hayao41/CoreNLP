@@ -377,8 +377,8 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
     public static Connection conn2database()throws Exception{
         Class.forName("com.mysql.jdbc.Driver").newInstance();
         Connection connection = null;
-        //connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
-        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test_dataset?user=root&password=rootpass123!@#");
+        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
+        //connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test_dataset?user=root&password=rootpass123!@#");
 
 //        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=20080808qwejkl");
         if(connection != null){
@@ -487,13 +487,15 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
             tree.setSpans();
             List<CoreLabel> tokens = tree.getLeaves().stream().map(leaf -> (CoreLabel) leaf.label()).collect(Collectors.toList());
             SemanticGraph graph = parse(tree);
+            String sid = senetnce.getSid();
 
             // Create a sentence object
-            CoreMap coreMap = new ArrayCoreMap(4) {{
+            CoreMap coreMap = new ArrayCoreMap(5) {{
                 set(CoreAnnotations.TokensAnnotation.class, tokens);
                 set(SemanticGraphCoreAnnotations.BasicDependenciesAnnotation.class, graph);
                 set(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class, graph);
                 set(SemanticGraphCoreAnnotations.EnhancedPlusPlusDependenciesAnnotation.class, graph);
+                set(ExtendedSemanticGraphCoreAnnotations.SnetenceID.class, sid);
             }};
             natlog.doOneSentence(null, coreMap);
             sentences.get(i).setCoreMap(coreMap);
@@ -600,6 +602,17 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
             e.printStackTrace();
         }
         return kb;
+    }
+
+    public static void saveAnnotation2DataBase(Connection connection, int annotation_index, String sentenceId)throws Exception{
+        String sql = "INSERT INTO annotation (annotation.relation_root, annotation.sid) VALUES (?,?)";
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        preparedStatement.setInt(1, annotation_index);
+        preparedStatement.setString(2, sentenceId);
+        int rows = preparedStatement.executeUpdate();
+        if(rows > 0){
+            System.out.println("Insert into annotation table with " + rows + " relation tree roots");
+        }
     }
 
 }

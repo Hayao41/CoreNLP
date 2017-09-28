@@ -824,7 +824,7 @@ public class ClauseSplitterSearchProblem  {
             }
           }).accept(copy);
           //return new SentenceFragment(copy, assumedTruth, false);
-          return new ExtendedSentenceFragement(copy, assumedTruth, false, root);
+          return new ExtendedSentenceFragement(copy, assumedTruth, false, rootWord);
         }))) {
           break;
         }
