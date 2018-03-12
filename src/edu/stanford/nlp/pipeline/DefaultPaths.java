@@ -51,8 +51,8 @@ public class DefaultPaths {
   public static final String DEFAULT_SUP_RELATION_EX_RELATION_MODEL = "edu/stanford/nlp/models/supervised_relation_extractor/roth_relation_model_pipelineNER.ser";
 
   public static final String DEFAULT_NATURALLI_AFFINITIES = "edu/stanford/nlp/models/naturalli/affinities";  // If you change this key, also change bin/mkopenie.sh
-  //public static final String DEFAULT_OPENIE_CLAUSE_SEARCHER = "edu/stanford/nlp/models/naturalli/clauseSearcherModel.ser.gz";  // If you change this key, also change bin/mkopenie.sh
-  public static final String DEFAULT_OPENIE_CLAUSE_SEARCHER = "D:\\Lib\\model\\temp\\clauseSearcher.ser.gz";
+  public static final String DEFAULT_OPENIE_CLAUSE_SEARCHER = "edu/stanford/nlp/models/naturalli/clauseSearcherModel.ser.gz";  // If you change this key, also change bin/mkopenie.sh
+//  public static final String DEFAULT_OPENIE_CLAUSE_SEARCHER = "D:\\Lib\\model\\temp\\clauseSearcher.ser.gz";
 
   public static final String DEFAULT_KBP_CLASSIFIER = "edu/stanford/nlp/models/kbp/tac-re-lr.ser.gz";
   public static final String DEFAULT_KBP_REGEXNER_CASED = "edu/stanford/nlp/models/kbp/regexner_cased.tab";

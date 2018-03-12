@@ -1,33 +1,15 @@
 package edu.stanford.nlp.naturalli;
 
-import com.sun.javafx.scene.web.Debugger;
 import edu.stanford.nlp.ie.machinereading.structure.Span;
-import edu.stanford.nlp.ling.HasWord;
-import edu.stanford.nlp.ling.IndexedWord;
-import edu.stanford.nlp.parser.lexparser.LexicalizedParser;
-import edu.stanford.nlp.process.Tokenizer;
 import edu.stanford.nlp.semgraph.SemanticGraph;
-import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
-import edu.stanford.nlp.trees.GrammaticalStructureFactory;
-import edu.stanford.nlp.trees.Tree;
-import edu.stanford.nlp.trees.TreebankLanguagePack;
 import edu.stanford.nlp.util.CoreMap;
-import edu.stanford.nlp.util.Index;
 import edu.stanford.nlp.util.Pair;
-import edu.stanford.nlp.util.logging.Redwood;
-import org.apache.commons.lang3.StringEscapeUtils;
-import sun.nio.cs.ext.ExtendedCharsets;
-import sun.rmi.runtime.Log;
 
 import java.io.*;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static edu.stanford.nlp.util.logging.Redwood.Util.endTrack;
 import static edu.stanford.nlp.util.logging.Redwood.Util.log;
-import static edu.stanford.nlp.util.logging.Redwood.Util.runtimeException;
-import static edu.stanford.nlp.util.logging.Redwood.finishThread;
 import static edu.stanford.nlp.util.logging.Redwood.forceTrack;
 
 /**
@@ -51,16 +33,19 @@ public class TrainingDataSet {
                 forceTrack("Processing treebanks");
 
                 //String url = "G:\\ideaprojects\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv";
-                //String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv";
-                String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences2.csv";
+//                String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences.csv";
+//                String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences2.csv";
+//                String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotatedSentences.csv";
+                String url = "D:\\Git\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotatedSentences2.csv";
                 //String url = "G:\\ideaprojects\\CoreNLP\\src\\edu\\stanford\\nlp\\AnnotatedFile\\annotated_sentences2.csv";
-                annotatedSentences = RelationDataPreprocessing.loadAnnotaedSentences(url);
+//                annotatedSentences = RelationDataPreprocessing.loadAnnotaedSentences(url);
+                annotatedSentences = RelationDataPreprocessing.loadNormedAnnotaedSentences(url);
                 ArrayList<Integer> temp = new ArrayList<>();
                 for(String sentence : annotatedSentences){
                     temp.add(sentence.length());
                 }
-                temp.sort(Integer::compareTo);
-                System.out.println(temp.get(temp.size()-1));
+
+                System.out.println(Collections.max(temp));
 
                 dataset = RelationDataPreprocessing.getDataSet(annotatedSentences);
 
@@ -94,7 +79,7 @@ public class TrainingDataSet {
                 break;
             }
             SemanticGraph graph = RelationDataPreprocessing.parse2dependency(sentence.get(ExtendedSemanticGraphCoreAnnotations.ParseTree.class));
-            subobjPair = RelationDataPreprocessing.getSubobjPair(graph, pair_span);
+            subobjPair = RelationDataPreprocessing.getSubObjPair(graph, pair_span);
             System.out.println("ok");
         }
     }

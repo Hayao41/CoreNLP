@@ -3,6 +3,7 @@ package edu.stanford.nlp.naturalli;
 import edu.stanford.nlp.ie.util.RelationTriple;
 import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.semgraph.SemanticGraph;
@@ -39,12 +40,17 @@ public class OpenIEDemo {
     if (args.length > 0) {
       text = IOUtils.slurpFile(args[0]);
     } else {
-      //text = "Obama was born in Hawaii, he is our president.";
+//      text = "Obama was born in Hawaii, he is our president.";
+      text = "David Henshaw ( April 2 , 1791 – November 11 , 1852 ) is the 14th United States Secretary of the Navy .";
       //text = "Born in a small town,she took the midnight train going anywhere.";
       //text = "Born in Honolulu,Obama is a US Citizen.";
       //text = "Microsoft's co-founder Bill Gates spoke in New York city";
-      text = "Alexandra of Denmark (1844-1925) was Queen Consort to Edward VII of the United Kingdom and thus Empress of India during her husband's reign.";
+      //text = "Alexandra of Denmark (1844-1925) was Queen Consort to Edward VII of the United Kingdom and thus Empress of India during her husband's reign.";
       //text = "Bill's bike is Penn";
+      //text = "Google's Hinton outlines new AI advance that requires less data";
+//      text = "Born in a small town, she took a midnight train very hard.";
+//      text = "White fox jumped away the dog.";
+//      text = "There are also many community choirs and bands including the Imogen Children's Chorale , Queensland Philharmonic Chorale , the Brisbane Chorale , the Queensland University Musical Society ( QUMS ) , the Queensland Choir.Queensland Conservatorium Griffith University , Queensland University Musical Society ( QUMS ) , CIP , Queensland Musical Society , Brisbane Philharmonic Orchestra , Queensland Wind and Brass , St Lucia Orchestra , Brisbane Symphonic Band , Brisbane Municipal Concert Band , Brisbane Arts Theatre , Brisbane Excelsior Brass Band , Queensland Youth Orchestras , Brisbane Regional Youth Orchestra , Queensland Wind Orchestra , Centenary Theatre Group , Villanova Players , Ignatians Musical Society , Queensland Musical Theatre , Savoyards Musical Comedy Society and Springboard Theatre Company .";
     }
     Annotation doc = new Annotation(text);
     pipeline.annotate(doc);
@@ -55,7 +61,9 @@ public class OpenIEDemo {
       System.out.println("Sentence #" + ++sentNo + ": " + sentence.get(CoreAnnotations.TextAnnotation.class));
 
       // Print SemanticGraph
-      System.out.println(sentence.get(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class).toString(SemanticGraph.OutputFormat.LIST));
+//      System.out.println(sentence.get(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class).toString(SemanticGraph.OutputFormat.LIST));
+      System.out.println(sentence.get(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class).toString(CoreLabel.OutputFormat.VALUE_TAG_INDEX));
+
 
       // Get the OpenIE triples for the sentence
       Collection<RelationTriple> triples = sentence.get(NaturalLogicAnnotations.RelationTriplesAnnotation.class);
