@@ -2,18 +2,27 @@ package edu.stanford.nlp.naturalli.bean;
 
 import edu.stanford.nlp.util.CoreMap;
 
-public class Senetnce {
+public class Sentence {
     private String sentence;
     private String parse_tree;
     private String sid;
     private CoreMap coreMap;
+    private String dpTreeStr;
 
-    public Senetnce() {
+    public Sentence() {
     }
 
-    public Senetnce(String sentence, String sid) {
+    public Sentence(String sentence, String sid) {
         this.sentence = sentence;
         this.sid = sid;
+    }
+
+    public String getDpTreeStr() {
+        return dpTreeStr;
+    }
+
+    public void setDpTreeStr(String dpTreeStr) {
+        this.dpTreeStr = dpTreeStr;
     }
 
     public String getParse_tree() {
@@ -50,7 +59,7 @@ public class Senetnce {
 
     @Override
     public String toString() {
-        return "Senetnce{" +
+        return "Sentence{" +
                 "sentence='" + sentence + '\'' +
                 ", sid=" + sid +
                 '}';

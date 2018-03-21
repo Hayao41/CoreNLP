@@ -3,13 +3,11 @@ package edu.stanford.nlp.naturalli;
 import com.csvreader.CsvReader;
 import edu.stanford.nlp.ie.machinereading.structure.Span;
 import edu.stanford.nlp.ie.util.RelationTriple;
-import edu.stanford.nlp.io.IOUtils;
 import edu.stanford.nlp.ling.*;
-import edu.stanford.nlp.naturalli.bean.Location;
-import edu.stanford.nlp.naturalli.bean.Senetnce;
+import edu.stanford.nlp.naturalli.bean.Sentence;
 import edu.stanford.nlp.parser.lexparser.LexicalizedParser;
+import edu.stanford.nlp.parser.nndep.DependencyParser;
 import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.process.ListProcessor;
 import edu.stanford.nlp.process.TSVSentenceProcessor;
 import edu.stanford.nlp.process.Tokenizer;
 import edu.stanford.nlp.semgraph.SemanticGraph;
@@ -17,7 +15,7 @@ import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.semgraph.semgrex.SemgrexMatcher;
 import edu.stanford.nlp.semgraph.semgrex.SemgrexPattern;
-import edu.stanford.nlp.simple.Sentence;
+import edu.stanford.nlp.tagger.maxent.MaxentTagger;
 import edu.stanford.nlp.trees.*;
 import edu.stanford.nlp.util.ArgumentParser;
 import edu.stanford.nlp.util.ArrayCoreMap;
@@ -25,7 +23,6 @@ import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.logging.Redwood;
 import org.apache.commons.lang3.StringEscapeUtils;
-import org.omg.CORBA.Request;
 
 import java.nio.charset.Charset;
 import java.sql.*;
@@ -41,6 +38,12 @@ import static edu.stanford.nlp.util.logging.Redwood.Util.forceTrack;
 import static edu.stanford.nlp.util.logging.Redwood.Util.log;
 
 public class RelationDataPreprocessing implements TSVSentenceProcessor {
+
+    private static final String modelPath = DependencyParser.DEFAULT_MODEL;
+    private static final String taggerPath = "edu/stanford/nlp/models/pos-tagger/english-left3words/english-left3words-distsim.tagger";
+    private  static  final String grammar = "edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz";
+    private  static  final LexicalizedParser lexicalizedParser = LexicalizedParser.loadModel(grammar);
+
     /** A logger for this class */
     private static Redwood.RedwoodChannels log = Redwood.channels(CreateClauseDataset.class);
 
@@ -298,6 +301,9 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         // Prepare the files to iterate over
         int numTreesProcessed = 0;
         List<Pair<CoreMap, Collection<Pair<Span, Span>>>> trainingData = new ArrayList<>(1024);
+        MaxentTagger tagger = new MaxentTagger(taggerPath);
+        DependencyParser parser = DependencyParser.loadFromModelFile(modelPath);
+
         for(int index = 0; index < parse_trees.size(); index ++){
             String sid = "S#" + index;
             Tree tree = parse_trees.get(index);
@@ -310,7 +316,14 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
                     .map(leaf -> (CoreLabel) leaf.label())
 //            .filter(leaf -> !TRACE_SOURCE_PATTERN.matcher(leaf.word()).matches() && !leaf.tag().equals("-NONE-"))
                     .collect(Collectors.toList());
-            SemanticGraph graph = parse(tree);
+
+            // get the semantic graph from original sentence(graph from pare tree will lead error propagate but angeli's parse tree is from PTB)
+            TreebankLanguagePack treebankLanguagePack = lexicalizedParser.getOp().langpack();
+            Tokenizer<? extends HasWord> tokenizer = treebankLanguagePack.getTokenizerFactory().getTokenizer(new StringReader(sentences.get(index)));
+            List<TaggedWord> tagged = tagger.tagSentence(tokenizer.tokenize());
+            GrammaticalStructure gs = parser.predict(tagged);
+            SemanticGraph graph = new SemanticGraph(gs.typedDependenciesCollapsed());
+
             Map<Integer, Span> targets = findTraceTargets(tree);
             Map<Integer, Integer> sources = findTraceSources(tree);
 
@@ -344,12 +357,8 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
 
     private static List<Tree> sent2trees(List<String> sentences) throws Exception{
 
-        String grammar = "edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz";
-
         //LexicalizedParser options but use default options so no other specific options here
         //String[] options = { "-retainTMPSubcategories", "-outputFormat", "wordsAndTags,penn,typedDependencies" };
-
-        LexicalizedParser lexicalizedParser = LexicalizedParser.loadModel(grammar);
 
         // Other grammar parser, optional
         //TreebankLanguagePack treebankLanguagePack = lexicalizedParser.getOp().langpack();
@@ -413,8 +422,8 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
     public static Connection conn2database()throws Exception{
         Class.forName("com.mysql.jdbc.Driver").newInstance();
         Connection connection = null;
-//        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
-        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test_dataset?user=root&password=rootpass123!@#");
+        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=rootpass123!@#");
+//        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/test_dataset?user=root&password=rootpass123!@#");
 
 //        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dataset?user=root&password=20080808qwejkl");
         if(connection != null){
@@ -500,9 +509,37 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         connection.close();
     }
 
+    public static void updateDataset(List<Sentence> sentences, Connection connection) throws Exception{
+        try{
+            String sql = "Update sentence set sentence.dpTreeStr = ? where sentence.sid = ?";
+            PreparedStatement stmt = connection.prepareStatement(sql);
+            int rows = 0;
+            for(Sentence sentence : sentences){
+                String sid = sentence.getSid();
+                String dpTreeStr = sentence.getDpTreeStr();
+                stmt.setString(1, dpTreeStr);
+                stmt.setString(2, sid);
+                rows += stmt.executeUpdate();
+            }
+            stmt.close();
+            if(rows > 0){
+                System.out.println("update "+ rows + " sentence dpTreeStr on sentence successfully!");
+            }
+
+        }finally {
+            connection.close();
+        }
+    }
+
     public static List<Pair<CoreMap, Collection<Pair<Span, Span>>>> loadDataSetfromDataBase()throws Exception{
+
+        MaxentTagger tagger = new MaxentTagger(taggerPath);
+        DependencyParser parser = DependencyParser.loadFromModelFile(modelPath);
+
         List<Pair<CoreMap, Collection<Pair<Span, Span>>>> dataset = new ArrayList<Pair<CoreMap, Collection<Pair<Span, Span>>>>();
-        ArrayList<Senetnce> sentences = new ArrayList<>();
+        ArrayList<Sentence> sentences = new ArrayList<>();
+        ArrayList<String> texts = new ArrayList<>();
+        ArrayList<Tree> trees = new ArrayList<>();
         Connection connection = conn2database();
         String sql_s = "SELECT * FROM sentence";
         String sql_l = "SELECT * FROM location WHERE sid = ?";
@@ -510,23 +547,35 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
         Statement stmt = connection.createStatement();
         ResultSet rs = stmt.executeQuery(sql_s);
         while (rs.next()){
-            Senetnce senetnce = new Senetnce();
-            senetnce.setSentence(rs.getString(1));
-            senetnce.setSid(rs.getString(2));
-            senetnce.setParse_tree(rs.getString(3));
-            sentences.add(senetnce);
+            Sentence sentence = new Sentence();
+            sentence.setSentence(rs.getString(1));
+            sentence.setSid(rs.getString(2));
+            sentence.setParse_tree(rs.getString(3));
+            sentences.add(sentence);
         }
         stmt.close();
         rs.close();
         for(int i = 0; i < sentences.size(); i ++){
             System.out.println("Processing sentence : S#" + i);
-            Senetnce senetnce = sentences.get(i);
-            Tree tree = Tree.valueOf(senetnce.getParse_tree(), new LabeledScoredTreeReaderFactory());
+            Sentence sentence = sentences.get(i);
+            String text = sentence.getSentence();
+            texts.add(text);
+            Tree tree = Tree.valueOf(sentence.getParse_tree(), new LabeledScoredTreeReaderFactory());
+            trees.add(tree);
+
             tree.indexSpans();
             tree.setSpans();
             List<CoreLabel> tokens = tree.getLeaves().stream().map(leaf -> (CoreLabel) leaf.label()).collect(Collectors.toList());
-            SemanticGraph graph = parse(tree);
-            String sid = senetnce.getSid();
+
+            // get the semantic graph from original sentence(graph from pare tree will lead error propagate but angeli's parse tree is from PTB)
+            TreebankLanguagePack treebankLanguagePack = lexicalizedParser.getOp().langpack();
+            Tokenizer<? extends HasWord> tokenizer = treebankLanguagePack.getTokenizerFactory().getTokenizer(new StringReader(text));
+            List<TaggedWord> tagged = tagger.tagSentence(tokenizer.tokenize());
+            GrammaticalStructure gs = parser.predict(tagged);
+            SemanticGraph graph = new SemanticGraph(gs.typedDependenciesCollapsed());
+            sentence.setDpTreeStr(graph.toString(CoreLabel.OutputFormat.VALUE_TAG_INDEX));
+
+            String sid = sentence.getSid();
 
             // Create a sentence object
             CoreMap coreMap = new ArrayCoreMap(5) {{
@@ -539,11 +588,11 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
             natlog.doOneSentence(null, coreMap);
             sentences.get(i).setCoreMap(coreMap);
         }
-        for(Senetnce senetnce : sentences){
+        for(Sentence sentence : sentences){
             Pair<CoreMap, Collection<Pair<Span, Span>>> datapair = new Pair<>();
             ArrayList<Pair<Span,Span>> locations = new ArrayList<>();
             preparedStatement = connection.prepareStatement(sql_l);
-            preparedStatement.setString(1,senetnce.getSid());
+            preparedStatement.setString(1, sentence.getSid());
             rs = preparedStatement.executeQuery();
             while (rs.next()){
                 Pair<Span,Span> pair = new Pair<>();
@@ -551,13 +600,14 @@ public class RelationDataPreprocessing implements TSVSentenceProcessor {
                 pair.second = new Span(rs.getInt(4), rs.getInt(6));
                 locations.add(pair);
             }
-            datapair.first = senetnce.getCoreMap();
+            datapair.first = sentence.getCoreMap();
             datapair.second = locations;
             dataset.add(datapair);
             preparedStatement.close();
             rs.close();
         }
-        connection.close();
+
+        updateDataset(sentences, connection);
         return dataset;
     }
 
